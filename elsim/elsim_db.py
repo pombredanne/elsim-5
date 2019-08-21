@@ -22,9 +22,9 @@ import re
 
 from elsim.similarity import DBFormat
 from elsim.similarity.simhash import simhash
-from androguard.core.analysis import analysis
 
-DEFAULT_SIGNATURE = analysis.SIGNATURE_SEQUENCE_BB
+# FIXME what was this exactly?
+DEFAULT_SIGNATURE = 'sequencebb'
 
 def eval_res_per_class(ret):
     z = {}
@@ -33,7 +33,6 @@ def eval_res_per_class(ret):
         for j in ret[i]:
             for k in ret[i][j]:
                 val = ret[i][j][k]
-            #    print val, k
                 if len(val[0]) == 1 and val[1] > 1:
                     continue
 
@@ -168,7 +167,6 @@ class ElsimDB(object):
 
       for _class in self.vm.get_classes():
           elems_hash = set()
-      #    print _class.get_name()
           for method in _class.get_methods():
               code = method.get_code()
               if code == None:
@@ -222,7 +220,7 @@ class ElsimDBIn(object):
         if re.match(regexp_exclude_pattern, _class.get_name()) != None:
             continue
 
-    print "\t", _class.get_name()
+    print("\t", _class.get_name())
     for method in _class.get_methods():
         code = method.get_code()
         if code == None:

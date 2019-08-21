@@ -27,8 +27,7 @@ from androguard.core.analysis import analysis
 from androguard.core import androconf
 from androguard.util import read
 
-sys.path.append("./elsim")
-from elsim import elsim
+import elsim
 from elsim.elsim_dalvik import ProxyDalvik, FILTERS_DALVIK_SIM, ProxyDalvikMethod, FILTERS_DALVIK_BB
 from elsim.elsim_dalvik import ProxyDalvikBasicBlock, FILTERS_DALVIK_DIFF_BB
 from elsim.elsim_dalvik import DiffDalvikMethod
@@ -86,7 +85,7 @@ def main(options, arguments):
         elif ret_type == "DEX":
             d1 = dvm.DalvikVMFormat(read(options.input[0]))
 
-        dx1 = analysis.VMAnalysis(d1)
+        dx1 = analysis.Analysis(d1)
 
         ret_type = androconf.is_android(options.input[1])
         if ret_type == "APK":
@@ -95,7 +94,7 @@ def main(options, arguments):
         elif ret_type == "DEX":
             d2 = dvm.DalvikVMFormat(read(options.input[1]))
 
-        dx2 = analysis.VMAnalysis(d2)
+        dx2 = analysis.Analysis(d2)
 
         print(d1, dx1, d2, dx2)
         sys.stdout.flush()

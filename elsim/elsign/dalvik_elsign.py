@@ -17,7 +17,8 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import json, base64
+import json
+import base64
 
 from androguard.core.bytecodes import apk
 from androguard.core.bytecodes import dvm
@@ -26,12 +27,13 @@ from androguard.core.analysis import analysis
 from androguard.core import androconf
 from androguard.util import read
 
-from .libelsign.libelsign import Elsign, entropy
+from elsim.elsign.libelsign.libelsign import Elsign, entropy
+from elsim import similarity
 
 METHSIM = 0
 CLASSSIM = 1
 
-DEFAULT_SIGNATURE = analysis.SIGNATURE_L0_4
+DEFAULT_SIGNATURE = 'L0_4'
 def get_signature(vmx, m):
     return vmx.get_method_signature(m, predef_sign = DEFAULT_SIGNATURE).get_string()
 
@@ -308,7 +310,7 @@ class PublicSignature(object):
             print("analysis..", end=' ')
             sys.stdout.flush()
 
-        vmx = analysis.VMAnalysis( vm )
+        vmx = analysis.Analysis( vm )
         return self._check_dalvik_direct( vm, vmx )
 
     def _check_dalvik_direct(self, vm, vmx):
@@ -404,7 +406,7 @@ class PublicCSignature(object):
 
         if ret_type == "APK" or ret_type == "DEX":
             vm = dvm.DalvikVMFormat( classes_dex )
-            vmx = analysis.VMAnalysis( vm )
+            vmx = analysis.Analysis( vm )
 
         for i in rules[1:]:
             x = { i["NAME"] : [] }
@@ -478,7 +480,7 @@ class PublicCSignature(object):
 
         if ret_type == "APK" or ret_type == "DEX":
             vm = dvm.DalvikVMFormat( classes_dex )
-            vmx = analysis.VMAnalysis( vm )
+            vmx = analysis.Analysis( vm )
 
         res = []
         for i in rules[1:]:
@@ -509,7 +511,6 @@ class CSignature(object):
         return self.pcs.get_info(srules)
 
     def list_indb(self, output):
-        from elsim.similarity import similarity
         s = similarity.SIMILARITY( "./elsim/elsim/similarity/libsimilarity/libsimilarity.so" )
         s.set_compress_type( similarity.Compress.ZLIB)
 
@@ -543,7 +544,6 @@ class CSignature(object):
                 nb += 1
 
 
-        from elsim.similarity import similarity
         s = similarity.SIMILARITY( "./elsim/elsim/similarity/libsimilarity/libsimilarity.so" )
         s.set_compress_type( similarity.Compress.SNAPPY )
 
@@ -551,7 +551,6 @@ class CSignature(object):
         self.__check_db( s, ids, class_sim )
 
     def __check_db(self, s, ids, elem_sim):
-        from elsim.similarity import similarity
         problems = {}
         for i in elem_sim:
             for j in elem_sim:
