@@ -199,7 +199,7 @@ class SIMILARITYBase:
 
 class SIMILARITYNative(SIMILARITYBase):
     # FIXME: actually thos can be replaced by a native module
-    def __init__(self, path="./libsimilarity/libsimilarity.so"):
+    def __init__(self, path="./libsimilarity.so"):
         super(SIMILARITYNative, self).__init__(True)
 
         self._u = cdll.LoadLibrary(path)
@@ -390,7 +390,7 @@ class SIMILARITY:
     The whole class works always with bytes!
     Therefore it is required to encode strings using an appropriate encoding scheme.
     """
-    def __init__(self, path="./libsimilarity/libsimilarity.so", native_lib=True):
+    def __init__(self, path="./libsimilarity.so", native_lib=True):
         if native_lib == True and NATIVE_LIB == True:
             try:
                 self.s = SIMILARITYNative(path)

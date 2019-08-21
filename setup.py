@@ -13,15 +13,15 @@ setup(
             ],
         ext_modules=[
             Extension(
-                'elsim.similarity.libsimilarity.libsimilarity',
-                sources=['elsim/similarity/libsimilarity/similarity.c'],
+                'elsim.similarity.libsimilarity',
+                sources=['elsim/similarity/similarity.c'],
                 libraries=libraries,
             ),
             Extension(
                 'elsim.elsign.libelsign',
                 sources=['elsim/elsign/elsign.cc'],
                 libraries=libraries,
-                include_dirs=['elsim/similarity/libsimilarity'],
+                include_dirs=['elsim/similarity'],
                 extra_compile_args=['-D_GLIBCXX_PERMIT_BACKWARD_HASH']
             )
             ],
