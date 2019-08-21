@@ -19,3 +19,13 @@ then use the makefile to build elsim:
 For running elsim, those packages should be sufficant:
 
 `apt install python libstdc++6 libgcc1 lib6 liblzma5 libmuparser2v5 libsnappy1v5 libbz2-1.0 zlib1g`
+
+Projects used
+-------------
+
+elsim contains (parts of) the following open source projects:
+
+* Wu Manber's Multi-Pattern Search Algorithm: Copyright (2008) One Unified
+* Aho Corasick implementation: Copyright (2007) Tideway Systems Limited
+* The C clustering library: Copyright (2002) Michiel Jan Laurens de Hoon
+* LZMA: Public Domain (2009) Igor Pavlov
