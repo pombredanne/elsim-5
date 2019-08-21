@@ -5,13 +5,13 @@
 #include <string.h>
 #include <math.h>
 
-#include "./z/z.h"
-#include "./bz2/bz2.h"
-#include "./smaz/smaz.h"
-#include "./lzma/lzma.h"
-#include "./xz/xz.h"
-#include "./snappy/snappy.h"
-#include "./vcblocksort/vcblocksort.h"
+#include "z/z.h"
+#include "bz2/bz2.h"
+#include "smaz/smaz.h"
+#include "lzma/lzma.h"
+#include "xz/xz.h"
+#include "snappy/snappy.h"
+#include "vcblocksort/vcblocksort.h"
 
 #define TYPE_Z          0
 #define TYPE_BZ2        1

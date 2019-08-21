@@ -807,7 +807,8 @@ static void Elsign_dealloc(sign_ElsignObject* self)
 {
     //cout<<"Called msign dealloc\n";
     delete self->s;
-    self->ob_type->tp_free((PyObject*)self);
+    // FIXME: this does not compile. Where is ob_type coming from?
+    //self->ob_type->tp_free((PyObject*)self);
 }
 
 static PyObject *Elsign_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -837,13 +838,13 @@ static PyObject *Elsign_set_sim_method(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "i", &sim_method );
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_sim_method( sim_method );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_threshold_low(sign_ElsignObject *self, PyObject *args)
@@ -853,13 +854,13 @@ static PyObject *Elsign_set_threshold_low(sign_ElsignObject *self, PyObject *arg
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "d", &threshold);
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_threshold_low( threshold );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_threshold_high(sign_ElsignObject *self, PyObject *args)
@@ -869,13 +870,13 @@ static PyObject *Elsign_set_threshold_high(sign_ElsignObject *self, PyObject *ar
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "d", &threshold);
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_threshold_high( threshold );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_distance(sign_ElsignObject *self, PyObject *args)
@@ -885,13 +886,13 @@ static PyObject *Elsign_set_distance(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "c", &dist);
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_distance( dist );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_method(sign_ElsignObject *self, PyObject *args)
@@ -901,13 +902,13 @@ static PyObject *Elsign_set_method(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "c", &method);
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_method( method );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_weight(sign_ElsignObject *self, PyObject *args)
@@ -917,11 +918,11 @@ static PyObject *Elsign_set_weight(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "O", &weight_list);
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         if ( !PyList_Check( weight_list ) ) {
 
-            return PyInt_FromLong(-1);
+            return PyLong_FromLong(-1);
         }
 
         int list_size = PyList_Size( weight_list );
@@ -939,10 +940,10 @@ static PyObject *Elsign_set_weight(sign_ElsignObject *self, PyObject *args)
         self->s->set_weight( datas, list_size );
 
         free( datas );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_npass(sign_ElsignObject *self, PyObject *args)
@@ -952,13 +953,13 @@ static PyObject *Elsign_set_npass(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "i", &npass );
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_npass( npass );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_set_ncd_compression_algorithm(sign_ElsignObject *self, PyObject *args)
@@ -968,13 +969,13 @@ static PyObject *Elsign_set_ncd_compression_algorithm(sign_ElsignObject *self, P
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "i", &compression_algorithm );
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_ncd_compression_algorithm( compression_algorithm );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
@@ -988,10 +989,10 @@ static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
         /* String/String/List */
 
         int ok = PyArg_ParseTuple( args, "s#s#O", &name, &name_size, &formula, &formula_size, &sub_list );
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         if ( !PyList_Check( sub_list ) ) {
-            return PyInt_FromLong(-1);
+            return PyLong_FromLong(-1);
         }
 
         vector<Signature *> *sub_vector = new vector<Signature *>;
@@ -1015,8 +1016,8 @@ static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
             }
 
             
-            unsigned int input_size = PyString_Size( string_sign );
-            char * input = PyString_AsString( string_sign );
+            unsigned int input_size = PyBytes_Size( string_sign );
+            char * input = PyBytes_AsString( string_sign );
 
             Signature *value = self->s->create_sub_signature( input, input_size, ets_vector );
 
@@ -1024,10 +1025,10 @@ static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
         }
 
         int id = self->s->add_signature( name, name_size, formula, formula_size, sub_vector );
-        return PyInt_FromLong(id);
+        return PyLong_FromLong(id);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_add_element(sign_ElsignObject *self, PyObject *args)
@@ -1038,10 +1039,10 @@ static PyObject *Elsign_add_element(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "s#O", &input, &input_size, &ets_list );
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         if ( !PyList_Check( ets_list ) ) {
-            return PyInt_FromLong(-1);
+            return PyLong_FromLong(-1);
         }
 
         vector<double> *ets_vector = new vector<double>;
@@ -1057,10 +1058,10 @@ static PyObject *Elsign_add_element(sign_ElsignObject *self, PyObject *args)
         }
 
         int id = self->s->add_element( input, input_size, ets_vector );
-        return PyInt_FromLong(id);
+        return PyLong_FromLong(id);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
 
 static PyObject *Elsign_check(sign_ElsignObject *self, PyObject *args)
@@ -1076,14 +1077,14 @@ static PyObject *Elsign_check(sign_ElsignObject *self, PyObject *args)
         if (name == NULL) {
             PyList_Append( check_list, Py_None );
         } else {
-            PyList_Append( check_list, PyString_FromString( name ) );
+            PyList_Append( check_list, PyBytes_FromString( name ) );
         }
 
         for(unsigned int ii = 0; ii < self->s->vector_result_signature.size(); ii++) {
             PyObject *icheck_list = PyList_New( 0 );
 
-            PyList_Append( icheck_list, PyInt_FromLong( self->s->vector_result_signature[ ii ]->link ) );
-            PyList_Append( icheck_list, PyInt_FromLong( self->s->vector_result_signature[ ii ]->id ) );
+            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->link ) );
+            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id ) );
             PyList_Append( icheck_list, PyFloat_FromDouble( self->s->vector_result_signature[ ii ]->value ) );
 
             PyList_Append( check_list, icheck_list );
@@ -1108,15 +1109,15 @@ static PyObject *Elsign_check_all(sign_ElsignObject *self, PyObject *args)
         if (name == NULL) {
             PyList_Append( check_list, Py_None );
         } else {
-            PyList_Append( check_list, PyString_FromString( name ) );
+            PyList_Append( check_list, PyBytes_FromString( name ) );
         }
 
         for(unsigned int ii = 0; ii < self->s->vector_result_signature.size(); ii++) {
             PyObject *icheck_list = PyList_New( 0 );
 
-            PyList_Append( icheck_list, PyInt_FromLong( self->s->vector_result_signature[ ii ]->link ) );
-            PyList_Append( icheck_list, PyInt_FromLong( self->s->vector_result_signature[ ii ]->id ) );
-            PyList_Append( icheck_list, PyInt_FromLong( self->s->vector_result_signature[ ii ]->id_cmp ) );
+            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->link ) );
+            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id ) );
+            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id_cmp ) );
             PyList_Append( icheck_list, PyFloat_FromDouble( self->s->vector_result_signature[ ii ]->value ) );
 
             PyList_Append( check_list, icheck_list );
@@ -1147,27 +1148,27 @@ static PyObject *Elsign_raz(sign_ElsignObject *self, PyObject *args)
 {
     if (self != NULL) {
         self->s->raz();
-        return PyInt_FromLong( 0 );
+        return PyLong_FromLong( 0 );
     }
-    return PyInt_FromLong( -1 );
+    return PyLong_FromLong( -1 );
 }
 
 static PyObject *Elsign_raz_results(sign_ElsignObject *self, PyObject *args)
 {
     if (self != NULL) {
         self->s->raz_results();
-        return PyInt_FromLong( 0 );
+        return PyLong_FromLong( 0 );
     }
-    return PyInt_FromLong( -1 );
+    return PyLong_FromLong( -1 );
 }
 
 static PyObject *Elsign_fix(sign_ElsignObject *self, PyObject *args)
 {
     if (self != NULL) {
         self->s->fix();
-        return PyInt_FromLong( 0 );
+        return PyLong_FromLong( 0 );
     }
-    return PyInt_FromLong( -1 );
+    return PyLong_FromLong( -1 );
 }
 
 static PyObject *Elsign_set_debug_log(sign_ElsignObject *self, PyObject *args)
@@ -1177,110 +1178,121 @@ static PyObject *Elsign_set_debug_log(sign_ElsignObject *self, PyObject *args)
     if (self != NULL) {
 
         int ok = PyArg_ParseTuple( args, "i", &value);
-        if(!ok) return PyInt_FromLong(-1);
+        if(!ok) return PyLong_FromLong(-1);
 
         self->s->set_debug_log( value );
-        return PyInt_FromLong(0);
+        return PyLong_FromLong(0);
     }
 
-    return PyInt_FromLong(-1);
+    return PyLong_FromLong(-1);
 }
-
-static PyMethodDef Elsign_methods[] = {
-    {"set_sim_method",  (PyCFunction)Elsign_set_sim_method, METH_VARARGS, "set sim method" },
-    
-    {"set_threshold_low",  (PyCFunction)Elsign_set_threshold_low, METH_VARARGS, "set threshold low" },
-    {"set_threshold_high",  (PyCFunction)Elsign_set_threshold_high, METH_VARARGS, "set threshold high" },
-    {"set_distance",  (PyCFunction)Elsign_set_distance, METH_VARARGS, "set dist" },
-    {"set_method",  (PyCFunction)Elsign_set_method, METH_VARARGS, "set method" },
-    {"set_weight",  (PyCFunction)Elsign_set_weight, METH_VARARGS, "set weight" },
-    {"set_npass",  (PyCFunction)Elsign_set_npass, METH_VARARGS, "set npass" },
-    {"set_debug_log",  (PyCFunction)Elsign_set_debug_log, METH_VARARGS, "set debug log" },
-   
-    {"set_ncd_compression_algorithm",  (PyCFunction)Elsign_set_ncd_compression_algorithm, METH_VARARGS, "set_ncd_compression_algorithm" },
-
-    {"add_signature",  (PyCFunction)Elsign_add_signature, METH_VARARGS, "add signature" },
-    {"add_element",  (PyCFunction)Elsign_add_element, METH_VARARGS, "add element" },
-    {"check",  (PyCFunction)Elsign_check, METH_VARARGS, "check" },
-    {"check_all",  (PyCFunction)Elsign_check_all, METH_VARARGS, "check_all" },
-
-    {"get_debug",  (PyCFunction)Elsign_get_debug, METH_VARARGS, "get debug" },
-
-    {"fix",  (PyCFunction)Elsign_fix, METH_NOARGS, "fix" },
-    {"raz",  (PyCFunction)Elsign_raz, METH_NOARGS, "raz" },
-    {"raz_results",  (PyCFunction)Elsign_raz_results, METH_NOARGS, "raz_results" },
-
-    {NULL, NULL, 0, NULL}        /* Sentinel */
-};
-
-    static PyTypeObject sign_ElsignType = {
-        PyObject_HEAD_INIT(NULL)
-            0,                         /*ob_size*/
-        "sign.Elsign",             /*tp_name*/
-        sizeof(sign_ElsignObject), /*tp_basicsize*/
-        0,                         /*tp_itemsize*/
-        (destructor)Elsign_dealloc,                         /*tp_dealloc*/
-        0,                         /*tp_print*/
-        0,                         /*tp_getattr*/
-        0,                         /*tp_setattr*/
-        0,                         /*tp_compare*/
-        0,                         /*tp_repr*/
-        0,                         /*tp_as_number*/
-        0,                         /*tp_as_sequence*/
-        0,                         /*tp_as_mapping*/
-        0,                         /*tp_hash */
-        0,                         /*tp_call*/
-        0,                         /*tp_str*/
-        0,                         /*tp_getattro*/
-        0,                         /*tp_setattro*/
-        0,                         /*tp_as_buffer*/
-        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,        /*tp_flags*/
-        "Elsign objects",           /* tp_doc */
-        0,                     /* tp_traverse */
-        0,                     /* tp_clear */
-        0,                     /* tp_richcompare */
-        0,                     /* tp_weaklistoffset */
-        0,                     /* tp_iter */
-        0,                     /* tp_iternext */
-        Elsign_methods,             /* tp_methods */
-        NULL,             /* tp_members */
-        NULL,           /* tp_getset */
-        0,                         /* tp_base */
-        0,                         /* tp_dict */
-        0,                         /* tp_descr_get */
-        0,                         /* tp_descr_set */
-        0,                         /* tp_dictoffset */
-        (initproc)Elsign_init,      /* tp_init */
-        0,                         /* tp_alloc */
-        Elsign_new,                 /* tp_new */
-    };
 
 PyObject *entropy(PyObject *self, PyObject* args)
 {
     char *input = NULL; size_t input_size = 0;
 
     int ok = PyArg_ParseTuple( args, "s#", &input, &input_size );
-    if(!ok) return PyInt_FromLong(-1);
+    if(!ok) return PyLong_FromLong(-1);
 
     double value = entropy( input, input_size );
 
     return PyFloat_FromDouble( value );
 }
 
-static PyMethodDef sign_methods[] = {
-    {"entropy",  (PyCFunction)entropy, METH_VARARGS, "entropy" },
-    {NULL}  /* Sentinel */
+/* Exporting the methods to python */
+
+
+static PyMethodDef elsign_methods[] = {
+    /* Methods in the Elsign Object */
+    {"set_sim_method", (PyCFunction)Elsign_set_sim_method, METH_VARARGS, "set sim method" },
+    
+    {"set_threshold_low", (PyCFunction)Elsign_set_threshold_low, METH_VARARGS, "set threshold low" },
+    {"set_threshold_high", (PyCFunction)Elsign_set_threshold_high, METH_VARARGS, "set threshold high" },
+    {"set_distance", (PyCFunction)Elsign_set_distance, METH_VARARGS, "set dist" },
+    {"set_method", (PyCFunction)Elsign_set_method, METH_VARARGS, "set method" },
+    {"set_weight", (PyCFunction)Elsign_set_weight, METH_VARARGS, "set weight" },
+    {"set_npass", (PyCFunction)Elsign_set_npass, METH_VARARGS, "set npass" },
+    {"set_debug_log", (PyCFunction)Elsign_set_debug_log, METH_VARARGS, "set debug log" },
+   
+    {"set_ncd_compression_algorithm", (PyCFunction)Elsign_set_ncd_compression_algorithm, METH_VARARGS, "set_ncd_compression_algorithm" },
+
+    {"add_signature", (PyCFunction)Elsign_add_signature, METH_VARARGS, "add signature" },
+    {"add_element", (PyCFunction)Elsign_add_element, METH_VARARGS, "add element" },
+    {"check", (PyCFunction)Elsign_check, METH_VARARGS, "check" },
+    {"check_all", (PyCFunction)Elsign_check_all, METH_VARARGS, "check_all" },
+
+    {"get_debug", (PyCFunction)Elsign_get_debug, METH_VARARGS, "get debug" },
+
+    {"fix", (PyCFunction)Elsign_fix, METH_NOARGS, "fix" },
+    {"raz", (PyCFunction)Elsign_raz, METH_NOARGS, "raz" },
+    {"raz_results", (PyCFunction)Elsign_raz_results, METH_NOARGS, "raz_results" },
+
+    {NULL}        /* Sentinel */
 };
 
-extern "C" PyMODINIT_FUNC initlibelsign(void) {
+static PyMethodDef sign_methods[] = {
+    /* Actual functions in the core module */
+    {"entropy",  entropy, METH_VARARGS, "entropy" },
+    {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+static PyTypeObject ElsignType = {
+    PyObject_HEAD_INIT(NULL)
+    "sign.Elsign",             /*tp_name*/
+    sizeof(sign_ElsignObject), /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)Elsign_dealloc,                         /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,        /*tp_flags*/
+    "Elsign objects",           /* tp_doc */
+    0,                     /* tp_traverse */
+    0,                     /* tp_clear */
+    0,                     /* tp_richcompare */
+    0,                     /* tp_weaklistoffset */
+    0,                     /* tp_iter */
+    0,                     /* tp_iternext */
+    elsign_methods,             /* tp_methods */
+    NULL,             /* tp_members */
+    NULL,           /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)Elsign_init,      /* tp_init */
+    0,                         /* tp_alloc */
+    Elsign_new,                 /* tp_new */
+};
+
+
+static struct PyModuleDef elsigndef = {
+    PyModuleDef_HEAD_INIT, "libelsign", "Elsign module", -1, sign_methods,
+};
+
+PyMODINIT_FUNC PyInit_libelsign(void){
     PyObject *m;
+    if (PyType_Ready(&ElsignType) < 0)
+        return NULL;
 
-    sign_ElsignType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&sign_ElsignType) < 0)
-        return;
+    m = PyModule_Create(&elsigndef);
+    if (m == NULL)
+        return NULL;
 
-    m = Py_InitModule3("libelsign", sign_methods, "Elsign module.");
-
-    Py_INCREF(&sign_ElsignType);
-    PyModule_AddObject(m, "Elsign", (PyObject *)&sign_ElsignType);
+    Py_INCREF(&ElsignType);
+    PyModule_AddObject(m, "Elsign", (PyObject *) &ElsignType);
+    return m;
 }
+
