@@ -41,7 +41,7 @@ def main(options, arguments):
                 ProxyText( read(options.input[1]) ), FILTERS_TEXT,
                 libpath="elsim/similarity/libsimilarity/libsimilarity.so")
         el.show()
-        print("\t--> sentences: %f%% of similarities" % el.get_similarity_value())
+        print(("\t--> sentences: %f%% of similarities" % el.get_similarity_value()))
 
         if options.display:
             print("SIMILAR sentences:")
@@ -70,7 +70,7 @@ def main(options, arguments):
                 el.show_element( i )
 
     elif options.version != None:
-        print("example text sim  %s" % ELSIM_VERSION)
+        print(("example text sim  %s" % ELSIM_VERSION))
 
 if __name__ == "__main__":
     parser = OptionParser()
