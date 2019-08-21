@@ -347,6 +347,11 @@ class SIMILARITYPython(SIMILARITYBase):
     def ncd(self, s1, s2):
         return self._sim( s1, s2, self._ncd )
 
+    def ncs(self, s1, s2):
+        ncd, _ = self.ncd(s1, s2)
+        # FIXME: why are there two items to return??
+        return 1.0 - ncd, 0
+
     def entropy(self, s1):
         end, ret = self.get_in_ecaches( s1 )
         if end != -1:
@@ -400,6 +405,9 @@ class SIMILARITY:
         return self.s.raz()
 
     def set_level(self, level):
+        """
+        Set the compression level, if compression supports it
+        """
         return self.s.set_level(level)
 
     def compress(self, s1):
@@ -414,6 +422,10 @@ class SIMILARITY:
         """
         Calculate Normalized Compression Distance (NCD)
 
+        The value is a floating point number between 0 and 1.
+        0 describes the lowest distance, i.e. the two inputs are equal,
+        while 1 describes a maximal distance.
+
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
@@ -422,7 +434,7 @@ class SIMILARITY:
     def ncs(self, s1, s2):
         """
         Calculate Normalized Compression Similarity
-        which is defined as 1 - ncd(s1, s2)
+        which is defined as 1 - ncd(s1, s2).
 
         :param bytes s1: The first string
         :param bytes s2: The second string
@@ -433,10 +445,8 @@ class SIMILARITY:
         """
         Calculate Compresson based Mutual Inclusion Degree
 
-        It seems this is a implementation of CMID which was explained in:
-        "Étude du métamorphisme viral: modélisation, conception et détection"
-        Borello, Jean-Marie
-        2011
+        It seems this is a implementation of CMID which is explained in:
+        Borello, Jean-Marie: Étude du métamorphisme viral: modélisation, conception et détection (2011)
 
         :param bytes s1: The first string
         :param bytes s2: The second string
