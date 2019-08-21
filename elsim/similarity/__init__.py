@@ -15,16 +15,26 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
+import zlib
+import bz2
+import math
+import json
+import re
+from ctypes import (cdll,
+                    c_float,
+                    c_double,
+                    c_int,
+                    c_uint,
+                    c_void_p,
+                    Structure,
+                    addressof,
+                    cast,
+                    c_size_t,
+                   )
 
-
-import zlib, bz2
-import math, json, re
-
-def simhash(x):
-    import simhash
-    return simhash.simhash(x)
 
 def entropy(data):
+    """Return Shannon entropy for a str"""
     entropy = 0.0
 
     if len(data) == 0:
@@ -37,7 +47,6 @@ def entropy(data):
     return entropy
 
 try:
-    from ctypes import cdll, c_float, c_double, c_int, c_uint, c_void_p, Structure, addressof, cast, c_size_t
 
     #struct libsimilarity {
     #   void *orig;
