@@ -27,7 +27,7 @@ sys.path.append(PATH_INSTALL)
 
 from optparse import OptionParser
 
-from elsim.similarity.similarity import *
+from elsim.similarity import *
 
 from androguard.core import androconf
 from androguard.core.bytecodes import apk, dvm

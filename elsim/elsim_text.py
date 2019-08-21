@@ -60,7 +60,7 @@ def filter_checksum_meth_basic( m1, sim ):
     return CheckSumText( m1, sim )
 
 def filter_sim_meth_basic( sim, m1, m2 ):
-    from similarity.similarity import XZ_COMPRESS
+    from elsim.similarity import XZ_COMPRESS
     sim.set_compress_type( XZ_COMPRESS )
     ncd1, _ = sim.ncd( m1.checksum.get_buff(), m2.checksum.get_buff() )
     return ncd1
@@ -70,7 +70,7 @@ def filter_sim_meth_basic( sim, m1, m2 ):
     #return (ncd1 + ncd2) / 2.0
 
 def filter_sort_meth_basic( j, x, value ):
-    z = sorted(x.iteritems(), key=lambda (k,v): (v,k))
+    z = sorted(x.iteritems(), key=lambda k, v: (v,k))
 
     if get_debug():
         for i in z:
@@ -135,8 +135,9 @@ class ProxyText(object):
         self.buff = buff
 
     def get_elements(self):
-        buff = self.buff.replace("\n"," ")
+        buff = self.buff.replace(b"\n", b" ")
         # multi split elements: ".", ",", ":"
         import re
-        for i in re.split('; |, |-|\.|\?|:', buff):
+        for i in re.split(b'; |, |-|\.|\?|:', buff):
             yield i
+

@@ -29,7 +29,7 @@ from optparse import OptionParser
 
 from elsim.elsim_db import *
 from elsim.elsim_dalvik import LIST_EXTERNAL_LIBS
-from elsim.similarity.similarity import *
+from elsim.similarity import *
 
 from androguard.core import androconf
 from androguard.core.bytecodes import apk, dvm

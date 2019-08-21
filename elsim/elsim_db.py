@@ -20,7 +20,7 @@
 
 import re
 
-from similarity.similarity import DBFormat, simhash
+from elsim.similarity import DBFormat, simhash
 from androguard.core.analysis import analysis
 
 DEFAULT_SIGNATURE = analysis.SIGNATURE_SEQUENCE_BB

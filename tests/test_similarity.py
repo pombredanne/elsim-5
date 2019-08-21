@@ -23,7 +23,7 @@ import sys, itertools, time, os, random
 PATH_INSTALL = "./"
 sys.path.append(PATH_INSTALL)
 
-from elsim.similarity.similarity import *
+from elsim.similarity import *
 
 TESTS_RANDOM_SIGN = [   "B[F1]",
                         "B[G]",
