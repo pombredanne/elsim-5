@@ -36,3 +36,6 @@ elsim/similarity/libsimilarity/z/test_z
 elsim/similarity/libsimilarity/z/test_z.o
 elsim/similarity/libsimilarity/z/z.o
 __pycache__
+*.so
+build
+*.egg-info
