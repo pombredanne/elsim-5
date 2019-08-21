@@ -98,10 +98,10 @@ class Compress(IntEnum):
     SNAPPY = 5
     VCBLOCKSORT = 6
 
-    def by_name(self, name):
+    def by_name(name):
         """Get attributes by name instead of integer"""
-        if hasattr(self, name):
-            return getattr(self, name)
+        if hasattr(Compress, name):
+            return getattr(Compress, name)
         else:
             raise ValueError("Compression method '{}' was not found!".format(name))
 
