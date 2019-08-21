@@ -99,43 +99,25 @@ class Compress(IntEnum):
     SNAPPY = 5
     VCBLOCKSORT = 6
 
+    @staticmethod
     def by_name(name):
         """Get attributes by name instead of integer"""
         if hasattr(Compress, name):
             return getattr(Compress, name)
-        else:
-            raise ValueError("Compression method '{}' was not found!".format(name))
+        raise ValueError("Compression method '{}' was not found!".format(name))
 
 
 class SIMILARITYBase:
     def __init__(self, native_lib=False):
         self.ctype = Compress.ZLIB
 
-        self.__caches = {
-           Compress.ZLIB : {},
-           Compress.BZ2 : {},
-           Compress.SMAZ : {},
-           Compress.LZMA : {},
-           Compress.XZ : {},
-           Compress.SNAPPY : {},
-           Compress.VCBLOCKSORT : {},
-        }
-
-        self.__rcaches = {
-           Compress.ZLIB : {},
-           Compress.BZ2 : {},
-           Compress.SMAZ : {},
-           Compress.LZMA : {},
-           Compress.XZ : {},
-           Compress.SNAPPY : {},
-           Compress.VCBLOCKSORT : {},
-        }
-
-        self.__ecaches = {}
+        self.__caches = {k: dict() for k in Compress}
+        self.__rcaches = {k: dict() for k in Compress}
+        self.__ecaches = dict()
 
         self.level = 9
 
-        if native_lib == True:
+        if native_lib:
             self.new_zero = new_zero_native
         else:
             self.new_zero = new_zero_python
@@ -308,7 +290,7 @@ class SIMILARITYPython(SIMILARITYBase):
     def _compress(self, s1):
         if self.ctype == Compress.ZLIB:
             return zlib.compress( s1, self.level )
-        elif self.ctype == Compress.BZ2:
+        if self.ctype == Compress.BZ2:
             return bz2.compress( s1, self.level )
 
     def _sim(self, s1, s2, func):
@@ -349,9 +331,8 @@ class SIMILARITYPython(SIMILARITYBase):
         return self._sim( s1, s2, self._ncd )
 
     def ncs(self, s1, s2):
-        ncd, _ = self.ncd(s1, s2)
-        # FIXME: why are there two items to return??
-        return 1.0 - ncd, 0
+        ncd, ret = self.ncd(s1, s2)
+        return 1.0 - ncd, ret
 
     def entropy(self, s1):
         end, ret = self.get_in_ecaches( s1 )
@@ -364,17 +345,16 @@ class SIMILARITYPython(SIMILARITYBase):
         return res, 0
 
     def levenshtein(self, a, b):
-        "Calculates the Levenshtein distance between a and b."
         n, m = len(a), len(b)
         if n > m:
             # Make sure n <= m, to use O(min(n,m)) space
-            a,b = b,a
-            n,m = m,n
+            a, b = b, a
+            n, m = m, n
 
-        current = range(n+1)
-        for i in range(1,m+1):
+        current = range(n + 1)
+        for i in range(1, m + 1):
             previous, current = current, [i]+[0]*n
-            for j in range(1,n+1):
+            for j in range(1, n + 1):
                 add, delete = previous[j]+1, current[j-1]+1
                 change = previous[j-1]
                 if a[j-1] != b[i-1]:
@@ -383,6 +363,7 @@ class SIMILARITYPython(SIMILARITYBase):
 
         return current[n]
 
+
 class SIMILARITY:
     """
     The Similarity class capsules all important functions for calculating
@@ -390,9 +371,23 @@ class SIMILARITY:
 
     The whole class works always with bytes!
     Therefore it is required to encode strings using an appropriate encoding scheme.
+
+    All the functions have a weird return value.
+    They return a tuple of the actual result and the result of the C function (if used).
+    That means, that errors are propagated through the second return value!
+
+    ..todo::
+        this shall be fixed some day and proper exceptions should be used!
+
+    To increase the computation speed, all inputs to methods of this class
+    are cached. Adler32 hash is used as a key for checking the cache.
+    This means, that there is a slight decrease in speed when using only
+    a few items, but there should be an increase if a reasonable number
+    of strings is compared.
+
     """
     def __init__(self, path="./libsimilarity.so", native_lib=True):
-        if native_lib == True and NATIVE_LIB == True:
+        if native_lib and NATIVE_LIB:
             try:
                 self.s = SIMILARITYNative(path)
             except Exception as e:
@@ -408,8 +403,20 @@ class SIMILARITY:
     def set_level(self, level):
         """
         Set the compression level, if compression supports it
+
+        Usually this is an integer value between 0 and 9
+
+        :param int level: compression level
         """
         return self.s.set_level(level)
+
+    def set_compress_type(self, t):
+        """"
+        Set the type of compressor to use
+
+        :param Compress t: the compression method
+        """
+        return self.s.set_compress_type(t)
 
     def compress(self, s1):
         """
@@ -495,14 +502,6 @@ class SIMILARITY:
         :param bytes s2: The second string
         """
         return self.s.levenshtein(s1, s2)
-
-    def set_compress_type(self, t):
-        """"
-        Set the type of compressor to use
-
-        :param Compress t: the compression method
-        """
-        return self.s.set_compress_type(t)
 
     def show(self):
         self.s.show()
