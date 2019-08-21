@@ -18,8 +18,8 @@ setup(
                 libraries=libraries,
             ),
             Extension(
-                'elsim.elsign.libelsign.libelsign',
-                sources=['elsim/elsign/libelsign/elsign.cc'],
+                'elsim.elsign.libelsign',
+                sources=['elsim/elsign/elsign.cc'],
                 libraries=libraries,
                 include_dirs=['elsim/similarity/libsimilarity'],
                 extra_compile_args=['-D_GLIBCXX_PERMIT_BACKWARD_HASH']

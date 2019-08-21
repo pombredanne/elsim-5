@@ -27,7 +27,7 @@ from androguard.core.analysis import analysis
 from androguard.core import androconf
 from androguard.util import read
 
-from elsim.elsign.libelsign.libelsign import Elsign, entropy
+from elsim.elsign.libelsign import Elsign, entropy
 from elsim import similarity
 
 METHSIM = 0
