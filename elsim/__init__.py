@@ -128,8 +128,7 @@ class Elsim(object):
         self.sim = SIMILARITY( libpath, libnative )
 
         if C != None:
-            if C in H_COMPRESSOR:
-                self.compressor = H_COMPRESSOR[ C ]
+            self.compressor = Compress.by_name(C)
 
             self.sim.set_compress_type( self.compressor )
         else:

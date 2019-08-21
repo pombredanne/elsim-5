@@ -98,21 +98,13 @@ class Compress(IntEnum):
     SNAPPY = 5
     VCBLOCKSORT = 6
 
+    def by_name(self, name):
+        """Get attributes by name instead of integer"""
+        if hasattr(self, name):
+            return getattr(self, name)
+        else:
+            raise ValueError("Compression method '{}' was not found!".format(name))
 
-H_COMPRESSOR = { "BZ2" :    Compress.BZ2,
-                 "ZLIB" :   Compress.ZLIB,
-                 "LZMA" :   Compress.LZMA,
-                 "XZ" :     Compress.XZ,
-                 "SNAPPY" : Compress.SNAPPY,
-               }
-
-HR_COMPRESSOR = {
-                Compress.BZ2 :      "BZ2",
-                Compress.ZLIB :     "ZLIB",
-                Compress.LZMA :     "LZMA",
-                Compress.XZ :       "XZ",
-                Compress.SNAPPY :   "SNAPPY",
-        }
 
 class SIMILARITYBase:
     def __init__(self, native_lib=False):
@@ -298,14 +290,15 @@ class SIMILARITYNative(SIMILARITYBase):
         self.ctype = t
         self._u.set_compress_type(t)
 
+
 class SIMILARITYPython(SIMILARITYBase):
     def __init__(self):
         super(SIMILARITYPython, self).__init__()
 
     def set_compress_type(self, t):
         self.ctype = t
-        if self.ctype != Compress.ZLIB and self.ctype != Compress.BZ2:
-            print("warning: compressor %s is not supported (use zlib default compressor)" % HR_COMPRESSOR[ t ])
+        if self.ctype not in (Compress.ZLIB, Compress.BZ2):
+            print("warning: compressor %s is not supported (using ZLIB as fallback)" % t.name)
             self.ctype = Compress.ZLIB
 
     def compress(self, s1):
@@ -493,6 +486,11 @@ class SIMILARITY:
         return self.s.levenshtein(s1, s2)
 
     def set_compress_type(self, t):
+        """"
+        Set the type of compressor to use
+
+        :param Compress t: the compression method
+        """
         return self.s.set_compress_type(t)
 
     def show(self):
