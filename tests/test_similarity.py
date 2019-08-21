@@ -304,21 +304,21 @@ def TestReorg( n ):
     for i in itertools.permutations( X, len(X) ):
         print(n.ncd("".join(j for j in X), "".join(j for j in i)))
 
-TESTS = { "ZLIB"        : ZLIB_COMPRESS,
-          "BZ2"         : BZ2_COMPRESS,
-          "LZMA"        : LZMA_COMPRESS,
-          "XZ"          : XZ_COMPRESS,
-          "SNAPPY"      : SNAPPY_COMPRESS,
-          "VCBLOCKSORT" : VCBLOCKSORT_COMPRESS,
-   #       "SMAZ"         : SMAZ_COMPRESS,
+TESTS = { "ZLIB"        : Compress.ZLIB,
+          "BZ2"         : Compress.BZ2,
+          "LZMA"        : Compress.LZMA,
+          "XZ"          : Compress.XZ,
+          "SNAPPY"      : Compress.SNAPPY,
+          "VCBLOCKSORT" : Compress.VCBLOCKSORT,
+   #       "SMAZ"         : Compress.SMAZ,
         }
 
 if __name__ == "__main__":
     n = SIMILARITY( "elsim/similarity/libsimilarity/libsimilarity.so" )
 
     #TestRDTSC( n )
-    #n.set_compress_type( BZ2_COMPRESS )
-    #n.set_compress_type( SNAPPY_COMPRESS )
+    #n.set_compress_type( Compress.BZ2 )
+    #n.set_compress_type( Compress.SNAPPY )
     #TestBenett( n )
 
     TestEntropy( n, TESTS_CLOSED_SIGN, 0.04 )

@@ -511,7 +511,7 @@ class CSignature(object):
     def list_indb(self, output):
         from elsim.similarity import similarity
         s = similarity.SIMILARITY( "./elsim/elsim/similarity/libsimilarity/libsimilarity.so" )
-        s.set_compress_type( similarity.ZLIB_COMPRESS )
+        s.set_compress_type( similarity.Compress.ZLIB)
 
         buff = json.loads( read(output, binary=False) )
         for i in buff:
@@ -545,7 +545,7 @@ class CSignature(object):
 
         from elsim.similarity import similarity
         s = similarity.SIMILARITY( "./elsim/elsim/similarity/libsimilarity/libsimilarity.so" )
-        s.set_compress_type( similarity.SNAPPY_COMPRESS )
+        s.set_compress_type( similarity.Compress.SNAPPY )
 
         self.__check_db( s, ids, meth_sim )
         self.__check_db( s, ids, class_sim )
@@ -560,9 +560,9 @@ class CSignature(object):
                     if ret < 0.3:
                         ids_cmp = ids[ i ] + ids[ j ]
                         if ids_cmp not in problems:
-                            s.set_compress_type( similarity.BZ2_COMPRESS )
+                            s.set_compress_type( similarity.Compress.BZ2 )
                             ret = s.ncd( i, j )[0]
-                            s.set_compress_type( similarity.SNAPPY_COMPRESS )
+                            s.set_compress_type( similarity.Compress.SNAPPY )
                             print("[-] ", ids[ i ], ids[ j ], ret)
                             problems[ ids_cmp ] = 0
                             problems[ ids[ j ] + ids[ i ] ] = 0

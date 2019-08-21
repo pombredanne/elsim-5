@@ -60,8 +60,8 @@ def filter_checksum_meth_basic( m1, sim ):
     return CheckSumText( m1, sim )
 
 def filter_sim_meth_basic( sim, m1, m2 ):
-    from elsim.similarity import XZ_COMPRESS
-    sim.set_compress_type( XZ_COMPRESS )
+    from elsim.similarity import Compress
+    sim.set_compress_type( Compress.XZ )
     ncd1, _ = sim.ncd( m1.checksum.get_buff(), m2.checksum.get_buff() )
     return ncd1
 

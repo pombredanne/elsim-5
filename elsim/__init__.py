@@ -114,7 +114,7 @@ class Elsim(object):
         self.e1 = e1
         self.e2 = e2
         self.F = F
-        self.compressor = SNAPPY_COMPRESS
+        self.compressor = Compress.SNAPPY
 
         set_debug()
 
@@ -336,7 +336,7 @@ class Elsim(object):
     def get_similarity_value(self, new=True):
         values = []
 
-        self.sim.set_compress_type( BZ2_COMPRESS )
+        self.sim.set_compress_type( Compress.BZ2 )
 
         for j in self.filters[SIMILAR_ELEMENTS]:
             k = self.get_associated_element( j )

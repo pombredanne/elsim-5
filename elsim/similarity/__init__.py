@@ -20,6 +20,7 @@ import bz2
 import math
 import json
 import re
+from enum import IntEnum
 from ctypes import (cdll,
                     c_float,
                     c_double,
@@ -34,14 +35,18 @@ from ctypes import (cdll,
 
 
 def entropy(data):
-    """Return Shannon entropy for a str"""
+    """
+    Return Shannon entropy for bytes
+    
+    :param bytes data: input
+    """
     entropy = 0.0
 
     if len(data) == 0:
         return entropy
 
     for x in range(256):
-        p_x = float(data.count(chr(x)))/len(data)
+        p_x = float(data.count(x))/len(data)
         if p_x > 0:
             entropy += - p_x*math.log(p_x, 2)
     return entropy
@@ -82,51 +87,55 @@ except:
 def new_zero_python():
     return 0
 
-ZLIB_COMPRESS         =     0
-BZ2_COMPRESS          =     1
-SMAZ_COMPRESS         =     2
-LZMA_COMPRESS         =     3
-XZ_COMPRESS           =     4
-SNAPPY_COMPRESS       =     5
-VCBLOCKSORT_COMPRESS  =     6
 
-H_COMPRESSOR = { "BZ2" :    BZ2_COMPRESS,
-                 "ZLIB" :   ZLIB_COMPRESS,
-                 "LZMA" :   LZMA_COMPRESS,
-                 "XZ" :     XZ_COMPRESS,
-                 "SNAPPY" : SNAPPY_COMPRESS,
+class Compress(IntEnum):
+    """Enum for the compression type"""
+    ZLIB = 0
+    BZ2 = 1
+    SMAZ = 2
+    LZMA = 3
+    XZ = 4
+    SNAPPY = 5
+    VCBLOCKSORT = 6
+
+
+H_COMPRESSOR = { "BZ2" :    Compress.BZ2,
+                 "ZLIB" :   Compress.ZLIB,
+                 "LZMA" :   Compress.LZMA,
+                 "XZ" :     Compress.XZ,
+                 "SNAPPY" : Compress.SNAPPY,
                }
 
 HR_COMPRESSOR = {
-                BZ2_COMPRESS :      "BZ2",
-                ZLIB_COMPRESS :     "ZLIB",
-                LZMA_COMPRESS :     "LZMA",
-                XZ_COMPRESS :       "XZ",
-                SNAPPY_COMPRESS :   "SNAPPY",
+                Compress.BZ2 :      "BZ2",
+                Compress.ZLIB :     "ZLIB",
+                Compress.LZMA :     "LZMA",
+                Compress.XZ :       "XZ",
+                Compress.SNAPPY :   "SNAPPY",
         }
 
-class SIMILARITYBase(object):
+class SIMILARITYBase:
     def __init__(self, native_lib=False):
-        self.ctype = ZLIB_COMPRESS
+        self.ctype = Compress.ZLIB
 
         self.__caches = {
-           ZLIB_COMPRESS : {},
-           BZ2_COMPRESS : {},
-           SMAZ_COMPRESS : {},
-           LZMA_COMPRESS : {},
-           XZ_COMPRESS : {},
-           SNAPPY_COMPRESS : {},
-           VCBLOCKSORT_COMPRESS : {},
+           Compress.ZLIB : {},
+           Compress.BZ2 : {},
+           Compress.SMAZ : {},
+           Compress.LZMA : {},
+           Compress.XZ : {},
+           Compress.SNAPPY : {},
+           Compress.VCBLOCKSORT : {},
         }
 
         self.__rcaches = {
-           ZLIB_COMPRESS : {},
-           BZ2_COMPRESS : {},
-           SMAZ_COMPRESS : {},
-           LZMA_COMPRESS : {},
-           XZ_COMPRESS : {},
-           SNAPPY_COMPRESS : {},
-           VCBLOCKSORT_COMPRESS : {},
+           Compress.ZLIB : {},
+           Compress.BZ2 : {},
+           Compress.SMAZ : {},
+           Compress.LZMA : {},
+           Compress.XZ : {},
+           Compress.SNAPPY : {},
+           Compress.VCBLOCKSORT : {},
         }
 
         self.__ecaches = {}
@@ -197,10 +206,11 @@ class SIMILARITYBase(object):
 
 
 class SIMILARITYNative(SIMILARITYBase):
+    # FIXME: actually thos can be replaced by a native module
     def __init__(self, path="./libsimilarity/libsimilarity.so"):
         super(SIMILARITYNative, self).__init__(True)
 
-        self._u = cdll.LoadLibrary( path )
+        self._u = cdll.LoadLibrary(path)
 
         self._u.compress.restype = c_uint
         self._u.ncd.restype = c_int
@@ -215,7 +225,7 @@ class SIMILARITYNative(SIMILARITYBase):
 
         self.__libsim_t = LIBSIMILARITY_T()
 
-        self.set_compress_type( ZLIB_COMPRESS )
+        self.set_compress_type( Compress.ZLIB )
 
     def raz(self):
         del self._u
@@ -294,17 +304,17 @@ class SIMILARITYPython(SIMILARITYBase):
 
     def set_compress_type(self, t):
         self.ctype = t
-        if self.ctype != ZLIB_COMPRESS and self.ctype != BZ2_COMPRESS:
+        if self.ctype != Compress.ZLIB and self.ctype != Compress.BZ2:
             print("warning: compressor %s is not supported (use zlib default compressor)" % HR_COMPRESSOR[ t ])
-            self.ctype = ZLIB_COMPRESS
+            self.ctype = Compress.ZLIB
 
     def compress(self, s1):
         return len(self._compress(s1))
 
     def _compress(self, s1):
-        if self.ctype == ZLIB_COMPRESS:
+        if self.ctype == Compress.ZLIB:
             return zlib.compress( s1, self.level )
-        elif self.ctype == BZ2_COMPRESS:
+        elif self.ctype == Compress.BZ2:
             return bz2.compress( s1, self.level )
 
     def _sim(self, s1, s2, func):
@@ -344,9 +354,6 @@ class SIMILARITYPython(SIMILARITYBase):
     def ncd(self, s1, s2):
         return self._sim( s1, s2, self._ncd )
 
-    def ncs(self, s1, s2):
-        return self._sim( s1, s2, self._u.ncs )
-
     def entropy(self, s1):
         end, ret = self.get_in_ecaches( s1 )
         if end != -1:
@@ -377,47 +384,112 @@ class SIMILARITYPython(SIMILARITYBase):
 
         return current[n]
 
-class SIMILARITY(object):
+class SIMILARITY:
+    """
+    The Similarity class capsules all important functions for calculating
+    similarities.
+
+    The whole class works always with bytes!
+    Therefore it is required to encode strings using an appropriate encoding scheme.
+    """
     def __init__(self, path="./libsimilarity/libsimilarity.so", native_lib=True):
         if native_lib == True and NATIVE_LIB == True:
             try:
-                self.s = SIMILARITYNative( path )
-            except:
+                self.s = SIMILARITYNative(path)
+            except Exception as e:
+                print(e)
                 self.s = SIMILARITYPython()
         else:
             self.s = SIMILARITYPython()
 
     def raz(self):
+        """Resets the current object, unloads .so"""
         return self.s.raz()
 
     def set_level(self, level):
         return self.s.set_level(level)
 
     def compress(self, s1):
+        """
+        Returns the length of the compressed string
+
+        :param bytes s1: the string to compress
+        """
         return self.s.compress(s1)
 
     def ncd(self, s1, s2):
+        """
+        Calculate Normalized Compression Distance (NCD)
+
+        :param bytes s1: The first string
+        :param bytes s2: The second string
+        """
         return self.s.ncd(s1, s2)
 
     def ncs(self, s1, s2):
+        """
+        Calculate Normalized Compression Similarity
+        which is defined as 1 - ncd(s1, s2)
+
+        :param bytes s1: The first string
+        :param bytes s2: The second string
+        """
         return self.s.ncs(s1, s2)
 
     def cmid(self, s1, s2):
+        """
+        Calculate Compresson based Mutual Inclusion Degree
+
+        It seems this is a implementation of CMID which was explained in:
+        "Étude du métamorphisme viral: modélisation, conception et détection"
+        Borello, Jean-Marie
+        2011
+
+        :param bytes s1: The first string
+        :param bytes s2: The second string
+        """
         return self.s.cmid(s1, s2)
 
     def kolmogorov(self, s1):
+        """
+        Get the Kolomgorov Complexity
+
+        :param bytes s1: input string
+        """
         return self.s.kolmogorov(s1)
 
     def bennett(self, s1):
+        """
+        Calculates the Logical Depth
+        It seems to be based on the paper
+        Bennett, Charles H.: Logical depth and physical complexity (1988)
+
+        :param bytes s1: input string
+        """
         return self.s.bennett(s1)
 
     def entropy(self, s1):
+        """
+        Calculate the (classical) Shannon Entropy
+
+        :param bytes s1: input
+        """
         return self.s.entropy(s1)
 
     def RDTSC(self):
+        """
+        Returns the value in the Timestamp Counter
+        which is a CPU register
+        """
         return self.s.RDTSC()
 
     def levenshtein(self, s1, s2):
+        """
+        Calculate Levenshtein distance
+
+        :param bytes s1: The first string
+        :param bytes s2: The second string
+        """
         return self.s.levenshtein(s1, s2)
 
     def set_compress_type(self, t):
