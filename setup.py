@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages, Extension
 
-libraries = ['lzma', 'muparser', 'snappy', 'bz2', 'z']
 
 setup(
     name='elsim',
@@ -28,15 +27,21 @@ setup(
                      'elsim/similarity/xz/xz.c',
                      'elsim/similarity/z/z.c',
                      ],
-            libraries=libraries,
+            libraries=['lzma', 'snappy', 'bz2', 'z'],
             extra_compile_args=[
                 '-D_7ZIP_ST',  # required for LZMA
             ],
         ),
         Extension(
             'elsim.elsign.libelsign',
-            sources=['elsim/elsign/elsign.cc'],
-            libraries=libraries,
+            sources=['elsim/elsign/elsign.cc',
+                     'elsim/elsign/ac_heap.c',
+                     'elsim/elsign/ac_list.c',
+                     'elsim/elsign/aho_corasick.c',
+                     'elsim/elsign/cluster.c',
+                     'elsim/elsign/formula.cc',
+                    ],
+            libraries=['muparser'],
             include_dirs=['elsim/similarity'],
             extra_compile_args=['-D_GLIBCXX_PERMIT_BACKWARD_HASH']
         )
