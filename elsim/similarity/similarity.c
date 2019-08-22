@@ -532,7 +532,7 @@ static PyObject *similarity_RDTSC(PyObject *self, PyObject *args) {
 }
 
 static PyObject *similarity_ncd(PyObject *self, PyObject *args) {
-    // takes level and two byte inputs and optional two compressed lengths, returns float
+    // takes level and two byte inputs and optional two compressed lengths, returns float and both compressed sizes
     Py_buffer s1;
     Py_buffer s2;
     Py_ssize_t s1_cached = 0;
@@ -543,7 +543,7 @@ static PyObject *similarity_ncd(PyObject *self, PyObject *args) {
         return NULL;
 
     // create the libsimilarity struct
-    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, s1_cached, s2_cached};
+    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, &s1_cached, &s2_cached};
     // ncd returns -1 on any error and 0 if it suceeded.
     int r = ncd(level, &simstruct);
     if (r != 0) {
@@ -553,14 +553,14 @@ static PyObject *similarity_ncd(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    PyObject *ret = Py_BuildValue("f", simstruct.res);
+    PyObject *ret = Py_BuildValue("fnn", simstruct.res, *simstruct.corig, *simstruct.ccmp);
     PyBuffer_Release(&s1);
     PyBuffer_Release(&s2);
     return ret;
 }
 
 static PyObject *similarity_ncs(PyObject *self, PyObject *args) {
-    // takes level and two byte inputs and optional two compressed lengths, returns float
+    // takes level and two byte inputs and optional two compressed lengths, returns float and both comp. lengths
     Py_buffer s1;
     Py_buffer s2;
     Py_ssize_t s1_cached = 0;
@@ -571,7 +571,7 @@ static PyObject *similarity_ncs(PyObject *self, PyObject *args) {
         return NULL;
 
     // create the libsimilarity struct
-    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, s1_cached, s2_cached};
+    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, &s1_cached, &s2_cached};
     // ncd returns -1 on any error and 0 if it suceeded.
     int r = ncs(level, &simstruct);
     if (r != 0) {
@@ -581,14 +581,14 @@ static PyObject *similarity_ncs(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    PyObject *ret = Py_BuildValue("f", simstruct.res);
+    PyObject *ret = Py_BuildValue("fnn", simstruct.res, *simstruct.corig, *simstruct.ccmp);
     PyBuffer_Release(&s1);
     PyBuffer_Release(&s2);
     return ret;
 }
 
 static PyObject *similarity_cmid(PyObject *self, PyObject *args) {
-    // takes level and two byte inputs and optional two compressed lengths, returns float
+    // takes level and two byte inputs and optional two compressed lengths, returns float and both comrpessed lengths
     Py_buffer s1;
     Py_buffer s2;
     Py_ssize_t s1_cached = 0;
@@ -599,7 +599,7 @@ static PyObject *similarity_cmid(PyObject *self, PyObject *args) {
         return NULL;
 
     // create the libsimilarity struct
-    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, s1_cached, s2_cached};
+    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, &s1_cached, &s2_cached};
     // ncd returns -1 on any error and 0 if it suceeded.
     int r = cmid(level, &simstruct);
     if (r != 0) {
@@ -609,7 +609,7 @@ static PyObject *similarity_cmid(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    PyObject *ret = Py_BuildValue("f", simstruct.res);
+    PyObject *ret = Py_BuildValue("fnn", simstruct.res, *simstruct.corig, *simstruct.ccmp);
     PyBuffer_Release(&s1);
     PyBuffer_Release(&s2);
     return ret;
