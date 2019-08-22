@@ -19,22 +19,27 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from elsim.elsim_text import ProxyText, FILTERS_TEXT
+from elsim import Elsim, ELSIM_VERSION
+from androguard.util import read
 from optparse import OptionParser
 
 import sys
 sys.path.append("./")
 
-from androguard.util import read
-from elsim import Elsim, ELSIM_VERSION
-from elsim.elsim_text import ProxyText, FILTERS_TEXT
 
-option_0 = { 'name' : ('-i', '--input'), 'help' : 'file : use these filenames', 'nargs' : 2 }
-option_1 = { 'name' : ('-d', '--display'), 'help' : 'display the file in human readable format', 'action' : 'count' }
-option_2 = { 'name' : ('-v', '--version'), 'help' : 'version of the API', 'action' : 'count' }
+option_0 = {'name': ('-i', '--input'),
+            'help': 'file : use these filenames', 'nargs': 2}
+option_1 = {'name': ('-d', '--display'),
+            'help': 'display the file in human readable format', 'action': 'count'}
+option_2 = {'name': ('-v', '--version'),
+            'help': 'version of the API', 'action': 'count'}
 
 options = [option_0, option_1, option_2]
 
 ############################################################
+
+
 def main(options, arguments):
     if options.version is not None:
         print(("example text sim  %s" % ELSIM_VERSION))
@@ -45,8 +50,8 @@ def main(options, arguments):
         return
 
     el = Elsim(ProxyText(read(options.input[0])),
-            ProxyText( read(options.input[1]) ), FILTERS_TEXT,
-            libpath="elsim/similarity/libsimilarity/libsimilarity.so")
+               ProxyText(read(options.input[1])), FILTERS_TEXT,
+               libpath="elsim/similarity/libsimilarity/libsimilarity.so")
     el.show()
     print(("\t--> sentences: %f%% of similarities" % el.get_similarity_value()))
 
@@ -54,27 +59,28 @@ def main(options, arguments):
         print("SIMILAR sentences:")
         diff_methods = el.get_similar_elements()
         for i in diff_methods:
-            el.show_element( i )
+            el.show_element(i)
 
         print("IDENTICAL sentences:")
         new_methods = el.get_identical_elements()
         for i in new_methods:
-            el.show_element( i )
+            el.show_element(i)
 
         print("NEW sentences:")
         new_methods = el.get_new_elements()
         for i in new_methods:
-            el.show_element( i, False )
+            el.show_element(i, False)
 
         print("DELETED sentences:")
         del_methods = el.get_deleted_elements()
         for i in del_methods:
-            el.show_element( i )
+            el.show_element(i)
 
         print("SKIPPED sentences:")
         skip_methods = el.get_skipped_elements()
         for i in skip_methods:
-            el.show_element( i )
+            el.show_element(i)
+
 
 if __name__ == "__main__":
     parser = OptionParser()

@@ -18,7 +18,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+from elsim.elsim_dalvik import ProxyDalvikStringMultiple, ProxyDalvikStringOne, FILTERS_DALVIK_SIM_STRING
+from elsim.elsim_dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
+from elsim import elsim
+import sys
+import os
 
 from optparse import OptionParser
 
@@ -28,9 +32,6 @@ from androguard.core.analysis import analysis
 from androguard.util import read
 
 sys.path.append("./elsim")
-from elsim import elsim
-from elsim.elsim_dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
-from elsim.elsim_dalvik import ProxyDalvikStringMultiple, ProxyDalvikStringOne, FILTERS_DALVIK_SIM_STRING
 
 option_0 = {
     'name': ('-i', '--input'),
@@ -155,7 +156,7 @@ def check_one_file(a,
                           threshold,
                           options.compressor,
                           libnative=library)
-        #els = elsim.Elsim( ProxyDalvikStringOne(d1, dx1),
+        # els = elsim.Elsim( ProxyDalvikStringOne(d1, dx1),
         #    ProxyDalvikStringOne(d2, dx2), FILTERS_DALVIK_SIM_STRING, threshold, options.compressor, libnative=library )
         els.show()
         print("\t--> strings: %f%% of similarities" % els.get_similarity_value(

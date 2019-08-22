@@ -23,10 +23,12 @@ import hashlib
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
 
-def filter_sim_value_meth( v ):
+
+def filter_sim_value_meth(v):
     if v >= 0.2:
         return 1.0
     return v
+
 
 class CheckSumFunc(object):
     def __init__(self, f, sim):
@@ -39,19 +41,19 @@ class CheckSumFunc(object):
         for i in self.f.get_instructions():
             self.buff += i.get_mnemonic()
 
-        self.entropy, _ = sim.entropy( self.buff )
+        self.entropy, _ = sim.entropy(self.buff)
 
     def get_signature(self):
         if self.signature == None:
             self.signature = self.buff
-            self.signature_entropy, _ = self.sim.entropy( self.signature )
+            self.signature_entropy, _ = self.sim.entropy(self.signature)
 
         return self.signature
 
     def get_signature_entropy(self):
         if self.signature == None:
             self.signature = self.buff
-            self.signature_entropy, _ = self.sim.entropy( self.signature )
+            self.signature_entropy, _ = self.sim.entropy(self.signature)
 
         return self.signature_entropy
 
@@ -61,26 +63,30 @@ class CheckSumFunc(object):
     def get_buff(self):
         return self.buff
 
-def filter_checksum_meth_basic( f, sim ):
-    return CheckSumFunc( f, sim )
 
-def filter_sim_meth_basic( sim, m1, m2 ):
+def filter_checksum_meth_basic(f, sim):
+    return CheckSumFunc(f, sim)
+
+
+def filter_sim_meth_basic(sim, m1, m2):
     #ncd1, _ = sim.ncd( m1.checksum.get_signature(), m2.checksum.get_signature() )
-    ncd2, _ = sim.ncd( m1.checksum.get_buff(), m2.checksum.get_buff() )
-    #return (ncd1 + ncd2) / 2.0
+    ncd2, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
+    # return (ncd1 + ncd2) / 2.0
     return ncd2
 
-def filter_sort_meth_basic( j, x, value ):
-    z = sorted(x.iteritems(), key=lambda k, v: (v,k))
+
+def filter_sort_meth_basic(j, x, value):
+    z = sorted(x.iteritems(), key=lambda k, v: (v, k))
 
     if get_debug():
         for i in z:
-            debug("\t %s %f" %(i[0].get_info(), i[1]))
+            debug("\t %s %f" % (i[0].get_info(), i[1]))
 
     if z[:1][0][1] > value:
         return []
 
     return z[:1]
+
 
 class Instruction(object):
     def __init__(self, i):
@@ -88,6 +94,7 @@ class Instruction(object):
 
     def get_mnemonic(self):
         return self.mnemonic
+
 
 class Function(object):
     def __init__(self, e, el):
@@ -104,30 +111,34 @@ class Function(object):
         return "%s" % (self.function.name)
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256( fm.get_buff() ).hexdigest()
+        self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
         self.checksum = fm
 
     def getsha256(self):
         return self.sha256
 
+
 def filter_element_meth_basic(el, e):
-    return Function( e, el )
+    return Function(e, el)
+
 
 class FilterNone(object):
     def skip(self, e):
-        #if e.get_nb_instructions() < 2:
+        # if e.get_nb_instructions() < 2:
         #    return True
         return False
 
+
 FILTERS_X86 = {
-    elsim.FILTER_ELEMENT_METH     : filter_element_meth_basic,
-    elsim.FILTER_CHECKSUM_METH    : filter_checksum_meth_basic,
-    elsim.FILTER_SIM_METH         : filter_sim_meth_basic,
-    elsim.FILTER_SORT_METH        : filter_sort_meth_basic,
-    elsim.FILTER_SORT_VALUE       : 0.6,
-    elsim.FILTER_SKIPPED_METH     : FilterNone(),
-    elsim.FILTER_SIM_VALUE_METH   : filter_sim_value_meth,
+    elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
+    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
+    elsim.FILTER_SIM_METH: filter_sim_meth_basic,
+    elsim.FILTER_SORT_METH: filter_sort_meth_basic,
+    elsim.FILTER_SORT_VALUE: 0.6,
+    elsim.FILTER_SKIPPED_METH: FilterNone(),
+    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
+
 
 class ProxyX86IDA(object):
     def __init__(self, ipipe):
@@ -135,4 +146,4 @@ class ProxyX86IDA(object):
 
     def get_elements(self):
         for i in self.functions:
-            yield self.functions[ i ]
+            yield self.functions[i]

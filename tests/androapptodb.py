@@ -18,6 +18,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
 
+from androguard.util import read
+from androguard.core.analysis import analysis
+from androguard.core.bytecodes import apk, dvm
+from androguard.core import androconf
+from elsim.similarity import *
+from optparse import OptionParser
 import sys
 sys.path.append("./")
 
@@ -25,46 +31,48 @@ PATH_INSTALL = "../androguard"
 
 sys.path.append(PATH_INSTALL)
 
-from optparse import OptionParser
 
-from elsim.similarity import *
-
-from androguard.core import androconf
-from androguard.core.bytecodes import apk, dvm
-from androguard.core.analysis import analysis
-from androguard.util import read
-
-option_0 = { 'name' : ('-i', '--input'), 'help' : 'file : use these filenames', 'nargs' : 1 }
-option_1 = { 'name' : ('-o', '--output'), 'help' : 'file : use these filenames', 'nargs' : 1 }
-option_2 = { 'name' : ('-n', '--name'), 'help' : 'file : use these filenames', 'nargs' : 1 }
-option_3 = { 'name' : ('-s', '--subname'), 'help' : 'file : use these filenames', 'nargs' : 1 }
-option_4 = { 'name' : ('-d', '--display'), 'help' : 'display the file in human readable format', 'action' : 'count' }
-option_5 = { 'name' : ('-v', '--version'), 'help' : 'version of the API', 'action' : 'count' }
+option_0 = {'name': ('-i', '--input'),
+            'help': 'file : use these filenames', 'nargs': 1}
+option_1 = {'name': ('-o', '--output'),
+            'help': 'file : use these filenames', 'nargs': 1}
+option_2 = {'name': ('-n', '--name'),
+            'help': 'file : use these filenames', 'nargs': 1}
+option_3 = {'name': ('-s', '--subname'),
+            'help': 'file : use these filenames', 'nargs': 1}
+option_4 = {'name': ('-d', '--display'),
+            'help': 'display the file in human readable format', 'action': 'count'}
+option_5 = {'name': ('-v', '--version'),
+            'help': 'version of the API', 'action': 'count'}
 
 options = [option_0, option_1, option_2, option_3, option_4]
 
 ############################################################
+
+
 def main(options, arguments):
-    if options.input != None  and options.output != None and options.name != None and options.subname != None:
-        edi = ElsimDBIn( options.output )
+    if options.input != None and options.output != None and options.name != None and options.subname != None:
+        edi = ElsimDBIn(options.output)
 
-        ret_type = androconf.is_android( options.input )
+        ret_type = androconf.is_android(options.input)
         if ret_type == "APK":
-            a = apk.APK( options.input )
-            d1 = dvm.DalvikVMFormat( a.get_dex() )
+            a = apk.APK(options.input)
+            d1 = dvm.DalvikVMFormat(a.get_dex())
         elif ret_type == "DEX":
-            d1 = dvm.DalvikVMFormat( read(options.input) )
+            d1 = dvm.DalvikVMFormat(read(options.input))
 
-        dx1 = analysis.VMAnalysis( d1 )
+        dx1 = analysis.VMAnalysis(d1)
 
         regexp_pattern = None
         regexp_exclude_pattern = None
 
-        edi.add( d1, dx1, options.name, options.sname, regexp_pattern, regexp_exclude_pattern)
+        edi.add(d1, dx1, options.name, options.sname,
+                regexp_pattern, regexp_exclude_pattern)
         edi.save()
 
     elif options.version != None:
         print(("Androapptodb version %s" % androconf.ANDROGUARD_VERSION))
+
 
 if __name__ == "__main__":
     parser = OptionParser()

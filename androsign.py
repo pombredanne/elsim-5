@@ -18,7 +18,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+from elsim.elsign import dalvik_elsign
+import sys
+import os
 
 from optparse import OptionParser
 
@@ -27,7 +29,6 @@ from androguard.core.bytecodes import apk
 from androguard.util import read
 
 sys.path.append("./elsim/")
-from elsim.elsign import dalvik_elsign
 
 option_0 = {
     'name': ('-i', '--input'),

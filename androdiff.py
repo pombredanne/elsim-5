@@ -69,7 +69,8 @@ option_7 = {
     'action': 'count'
 }
 
-options = [option_0, option_1, option_2, option_3, option_5, option_6, option_7]
+options = [option_0, option_1, option_2,
+           option_3, option_5, option_6, option_7]
 
 
 def main(options, arguments):
@@ -115,11 +116,11 @@ def main(options, arguments):
             j = e1[i]
             elb = elsim.Elsim(ProxyDalvikMethod(i), ProxyDalvikMethod(j),
                               FILTERS_DALVIK_BB, threshold, options.compressor)
-            #elb.show()
+            # elb.show()
 
             eld = elsim.Eldiff(ProxyDalvikBasicBlock(elb),
                                FILTERS_DALVIK_DIFF_BB)
-            #eld.show()
+            # eld.show()
 
             ddm = DiffDalvikMethod(i, j, elb, eld)
             ddm.show()
