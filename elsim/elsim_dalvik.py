@@ -127,7 +127,6 @@ class CheckSumBB(object):
             self.buff += dvm.clean_name_instruction(i)
             self.buff += dvm.static_operand_instruction(i)
 
-        #self.hash = hashlib.sha256( self.buff + "%d%d" % (len(basic_block.childs), len(basic_block.fathers)) ).hexdigest()
         self.hash = hashlib.sha256(self.buff).hexdigest()
 
     def get_buff(self):
@@ -300,7 +299,7 @@ class Method(object):
         return self.m.get_length()
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
+        self.sha256 = hashlib.sha256(fm.get_buff().encode('UTF-8')).hexdigest()
         self.checksum = fm
 
     def diff(self, func_sim_bb, func_diff_ins):
@@ -559,7 +558,7 @@ class StringVM(object):
         self.el = el
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
+        self.sha256 = hashlib.sha256(fm.get_buff().encode('UTF-8')).hexdigest()
         self.checksum = fm
 
     def get_length(self):
@@ -630,8 +629,12 @@ FILTERS_DALVIK_BB = {
 }
 
 
-class ProxyDalvik(object):
+class ProxyDalvik:
     def __init__(self, vm, vmx):
+        """
+        :param androguard.core.bytecodes.dvm.DalvikVMFormat vm:
+        :param androgaurd.core.analysis.analysis.Analysis vmx:
+        """
         self.vm = vm
         self.vmx = vmx
 

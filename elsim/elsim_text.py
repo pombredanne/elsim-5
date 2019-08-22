@@ -22,6 +22,7 @@ import hashlib
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
+from elsim.similarity import Compress
 
 
 def filter_sim_value_meth(v):
@@ -32,6 +33,10 @@ def filter_sim_value_meth(v):
 
 class CheckSumText(object):
     def __init__(self, s1, sim):
+        """
+        :param s1:
+        :param elsim.similarity.SIMILARITY sim: the similarity module
+        """
         self.s1 = s1
         self.sim = sim
         self.buff = s1.string
@@ -40,15 +45,15 @@ class CheckSumText(object):
 
     def get_signature(self):
         if self.signature == None:
-            raise("ooo")
-            self.signature_entropy, _ = self.sim.entropy(self.signature)
+            raise ValueError("no signature set!")
+        self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature
 
     def get_signature_entropy(self):
         if self.signature == None:
-            raise("ooo")
-            self.signature_entropy, _ = self.sim.entropy(self.signature)
+            raise ValueError("no signature set!")
+        self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature_entropy
 
@@ -64,7 +69,6 @@ def filter_checksum_meth_basic(m1, sim):
 
 
 def filter_sim_meth_basic(sim, m1, m2):
-    from elsim.similarity import Compress
     sim.set_compress_type(Compress.XZ)
     ncd1, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd1

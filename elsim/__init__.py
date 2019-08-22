@@ -127,6 +127,14 @@ def split_elements(el, els):
 
 class Elsim:
     def __init__(self, e1, e2, F, T=None, C=None):
+        """
+        
+        :param e1: ???
+        :param e2: ???
+        :param F: ???
+        :param T: ???
+        :param str C: compression method name
+        """
         self.e1 = e1
         self.e2 = e2
         self.F = F
@@ -140,11 +148,8 @@ class Elsim:
         self.sim = SIMILARITY()
 
         if C != None:
-            self.compressor = Compress.by_name(C)
-
-            self.sim.set_compress_type(self.compressor)
-        else:
-            self.sim.set_compress_type(self.compressor)
+            self.compressor = Compress.by_name(C.upper())
+        self.sim.set_compress_type(self.compressor)
 
         self.filters = {}
 

@@ -107,8 +107,7 @@ def main(options, arguments):
         FS = FILTERS_DALVIK_SIM
         FS[elsim.FILTER_SKIPPED_METH].set_regexp(options.exclude)
         FS[elsim.FILTER_SKIPPED_METH].set_size(options.size)
-        el = elsim.Elsim(ProxyDalvik(d1, dx1), ProxyDalvik(d2, dx2), FS,
-                         threshold, options.compressor)
+        el = elsim.Elsim(ProxyDalvik(d1, dx1), ProxyDalvik(d2, dx2), FS, threshold, options.compressor)
         el.show()
 
         e1 = elsim.split_elements(el, el.get_similar_elements())
