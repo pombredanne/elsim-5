@@ -129,10 +129,10 @@ class Elsim:
     def __init__(self, e1, e2, F, T=None, C=None):
         """
         
-        :param e1: ???
-        :param e2: ???
-        :param F: ???
-        :param T: ???
+        :param e1: ??? the first element to compare ???
+        :param e2: ??? the second element to compare ???
+        :param F: ??? some filter ???
+        :param T: ??? some threshold ???
         :param str C: compression method name
         """
         self.e1 = e1
@@ -398,8 +398,6 @@ class Elsim:
         print("\t NEW:\t\t", len(self.get_new_elements()))
         print("\t DELETED:\t", len(self.get_deleted_elements()))
         print("\t SKIPPED:\t", len(self.get_skipped_elements()))
-
-        # self.sim.show()
 
 
 ADDED_ELEMENTS = "added elements"

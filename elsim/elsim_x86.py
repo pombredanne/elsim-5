@@ -41,19 +41,19 @@ class CheckSumFunc(object):
         for i in self.f.get_instructions():
             self.buff += i.get_mnemonic()
 
-        self.entropy, _ = sim.entropy(self.buff)
+        self.entropy = sim.entropy(self.buff)
 
     def get_signature(self):
         if self.signature == None:
             self.signature = self.buff
-            self.signature_entropy, _ = self.sim.entropy(self.signature)
+            self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature
 
     def get_signature_entropy(self):
         if self.signature == None:
             self.signature = self.buff
-            self.signature_entropy, _ = self.sim.entropy(self.signature)
+            self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature_entropy
 
@@ -69,9 +69,7 @@ def filter_checksum_meth_basic(f, sim):
 
 
 def filter_sim_meth_basic(sim, m1, m2):
-    #ncd1, _ = sim.ncd( m1.checksum.get_signature(), m2.checksum.get_signature() )
-    ncd2, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
-    # return (ncd1 + ncd2) / 2.0
+    ncd2, _, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd2
 
 

@@ -3,6 +3,7 @@ from setuptools import setup, find_packages, Extension
 
 setup(
     name='elsim',
+    version='0.2.0',
     description='Elsim is a library designed to detect similar content in files, especially in the context of Android',
     packages=find_packages(),
     install_requires=[

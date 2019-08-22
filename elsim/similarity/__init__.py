@@ -444,7 +444,7 @@ class DBFormat(object):
                     if isinstance(self.D[i][j][k], dict):
                         self.H[i][j][k] = set()
                         for e in self.D[i][j][k].keys():
-                            self.H[i][j][k].add(long(e))
+                            self.H[i][j][k].add(int(e))
 
     def add_name(self, name, value):
         if name not in self.D:
