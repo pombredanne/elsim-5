@@ -21,7 +21,7 @@
 import re
 
 from elsim.similarity import DBFormat
-from elsim.similarity.simhash import simhash
+from hashes.simhash import simhash
 
 # FIXME what was this exactly?
 DEFAULT_SIGNATURE = 'sequencebb'

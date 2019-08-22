@@ -7,6 +7,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "androguard>=3.3.5",
+        "python-hashes",
         "numpy",  # only used once, not sure if actual dependency or just some optional stuff
         "sklearn",  # only used once, not sure if actual dependency or just some optional stuff
     ],
