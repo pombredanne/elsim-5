@@ -18,7 +18,9 @@
    along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
    */
 
+#define PY_SSIZE_T_CLEAN
 #include "similarity.h"
+#include <Python.h>
 
 #define M_BLOCK         1000000
 
@@ -318,7 +320,6 @@ unsigned int kolmogorov(int level, void *orig, size_t size_orig)
     size_t size_compress_buff, s, ret;
     void *compress_buff;
 
-
     compress_buff = alloc_buff( size_orig, size_orig, &size_compress_buff, &context );
     
     s = size_compress_buff;
@@ -447,3 +448,84 @@ size_t levenshtein(const u_int8_t *a, size_t alen, const u_int8_t *b, size_t ble
     free(current);
     return (r);
 }
+
+
+
+/* python wrapper functipns */
+static PyObject *similarity_compress(PyObject *self, PyObject *args) {
+    // Takes a compression level, byte object and returns a size_t
+    Py_buffer data;
+    int level;
+
+    if (!PyArg_ParseTuple(args, "iy*", &level, &data))
+        return NULL;
+
+    size_t res = compress(level, data.buf, data.len);
+    PyObject *ret = Py_BuildValue("n", res);
+    PyBuffer_Release(&data);
+    return ret;
+}
+
+static PyObject *similarity_entropy(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_levenshtein(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_kolmogorov(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_bennett(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_RDTSC(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_ncd(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_ncs(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_cmid(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+static PyObject *similarity_set_compress_type(PyObject *self, PyObject *args) {
+    return NULL;
+}
+
+
+static PyMethodDef similarity_methods[] = {
+    {"compress", similarity_compress, METH_VARARGS, "Compress the given Bytes and returns the length"},
+    {"entropy", similarity_entropy, METH_VARARGS, "Calculate Shannon Entropy for the given bytes"},
+    {"levenshtein", similarity_levenshtein, METH_VARARGS, "Calculte Levenshtein Distance between two inputs"},
+    {"kolmogorov", similarity_kolmogorov, METH_VARARGS, "Estimate Kolmogorov Complexity based on compression"},
+    {"bennett", similarity_bennett, METH_VARARGS, "Estimate Logical Depth (Bennett) by compression and runtime"},
+    {"RDTSC", similarity_RDTSC, METH_VARARGS, "Return the current Time Stamp Counter register value"},
+    {"ncd", similarity_ncd, METH_VARARGS, "Calculate Normalized Compression Distance for two inputs"},
+    {"ncs", similarity_ncs, METH_VARARGS, "Calculate Normaluzed Compression Similarity for two inputs"},
+    {"cmid", similarity_cmid, METH_VARARGS, "Calculate Compression based Mututal Inclusuion Degree for two inputs"},
+    {"set_compress_type", similarity_set_compress_type, METH_VARARGS, "Set the compression method"},
+    {NULL, NULL, 0, NULL} /* sentinel */
+};
+
+static struct PyModuleDef similarity = {
+    PyModuleDef_HEAD_INIT,
+    "libsimilarity",
+    NULL,
+    -1,
+    similarity_methods
+};
+
+PyMODINIT_FUNC PyInit_libsimilarity(void){
+    return PyModule_Create(&similarity);
+}
+

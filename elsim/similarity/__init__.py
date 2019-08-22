@@ -187,13 +187,15 @@ class SIMILARITYNative(SIMILARITYBase):
 
         self._u = cdll.LoadLibrary(path)
 
-        self._u.compress.restype = c_uint
+        # Functions which use the libsimilarity struct
         self._u.ncd.restype = c_int
         self._u.ncs.restype = c_int
         self._u.cmid.restype = c_int
+
+        # Functions which can easily be transfered into python binding
+        self._u.compress.restype = c_uint
         self._u.entropy.restype = c_double
         self._u.levenshtein.restype = c_uint
-
         self._u.kolmogorov.restype = c_uint
         self._u.bennett.restype = c_double
         self._u.RDTSC.restype = c_double
@@ -463,7 +465,12 @@ class SIMILARITY:
 
     def kolmogorov(self, s1):
         """
-        Get the Kolomgorov Complexity
+        Calculate an upper bound for the Kolmogorov Complexity
+        using compression method.
+
+        As the actual value of the Kolmogorov Complexity is not computable,
+        this is just an approximate value, which will change based on the
+        compression method used.
 
         :param bytes s1: input string
         """

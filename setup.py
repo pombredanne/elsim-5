@@ -14,8 +14,24 @@ setup(
         ext_modules=[
             Extension(
                 'elsim.similarity.libsimilarity',
-                sources=['elsim/similarity/similarity.c'],
+                sources=['elsim/similarity/similarity.c',
+                         'elsim/similarity/bz2/bz2.c',
+                         'elsim/similarity/lzma/Alloc.c',
+                         'elsim/similarity/lzma/LzFind.c',
+                         'elsim/similarity/lzma/LzmaDec.c',
+                         'elsim/similarity/lzma/LzmaEnc.c',
+                         'elsim/similarity/lzma/LzmaLib.c',
+                         'elsim/similarity/lzma/lzma.c',
+                         'elsim/similarity/smaz/smaz.c',
+                         'elsim/similarity/snappy/snappy.cc',
+                         'elsim/similarity/vcblocksort/vcblocksort.c',
+                         'elsim/similarity/xz/xz.c',
+                         'elsim/similarity/z/z.c',
+                         ],
                 libraries=libraries,
+                extra_compile_args=[
+                    '-D_7ZIP_ST',  # required for LZMA
+                    ],
             ),
             Extension(
                 'elsim.elsign.libelsign',
