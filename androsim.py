@@ -20,7 +20,7 @@
 
 from elsim.elsim_dalvik import ProxyDalvikStringMultiple, ProxyDalvikStringOne, FILTERS_DALVIK_SIM_STRING
 from elsim.elsim_dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
-from elsim import elsim
+import elsim
 import sys
 import os
 
@@ -30,8 +30,6 @@ from androguard.core import androconf
 from androguard.core.bytecodes import apk, dvm
 from androguard.core.analysis import analysis
 from androguard.util import read
-
-sys.path.append("./elsim")
 
 option_0 = {
     'name': ('-i', '--input'),
@@ -110,9 +108,9 @@ def check_one_file(a,
     elif ret_type == "DEX":
         d2 = dvm.DalvikVMFormat(read(file_input))
 
-    if d2 == None:
+    if d2 is None:
         return
-    dx2 = analysis.VMAnalysis(d2)
+    dx2 = analysis.Analysis(d2)
 
     el = elsim.Elsim(ProxyDalvik(d1, dx1),
                      ProxyDalvik(d2, dx2),
@@ -156,8 +154,6 @@ def check_one_file(a,
                           threshold,
                           options.compressor,
                           libnative=library)
-        # els = elsim.Elsim( ProxyDalvikStringOne(d1, dx1),
-        #    ProxyDalvikStringOne(d2, dx2), FILTERS_DALVIK_SIM_STRING, threshold, options.compressor, libnative=library )
         els.show()
         print("\t--> strings: %f%% of similarities" % els.get_similarity_value(
             new))
@@ -198,7 +194,7 @@ def check_one_directory(a,
                         view_strings=False,
                         new=True,
                         library=True):
-    for root, dirs, files in os.walk(directory, followlinks=True):
+    for root, _, files in os.walk(directory, followlinks=True):
         if files != []:
             for f in files:
                 real_filename = root
@@ -222,7 +218,7 @@ def main(options, arguments):
         elif ret_type == "DEX":
             d1 = dvm.DalvikVMFormat(read(options.input[0]))
 
-        dx1 = analysis.VMAnalysis(d1)
+        dx1 = analysis.Analysis(d1)
 
         threshold = None
         if options.threshold != None:
