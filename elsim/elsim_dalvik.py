@@ -53,13 +53,13 @@ class CheckSumMeth(object):
                 self.buff += dvm.clean_name_instruction(i)
                 self.buff += dvm.static_operand_instruction(i)
 
-            self.entropy, _ = sim.entropy(self.buff)
+            self.entropy = sim.entropy(self.buff)
 
     def get_signature(self):
         if self.signature == None:
             self.signature = self.m1.vmx.get_method_signature(
                 self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
-            self.signature_entropy, _ = self.sim.entropy(self.signature)
+            self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature
 
@@ -67,7 +67,7 @@ class CheckSumMeth(object):
         if self.signature == None:
             self.signature = self.m1.vmx.get_method_signature(
                 self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
-            self.signature_entropy, _ = self.sim.entropy(self.signature)
+            self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature_entropy
 
@@ -93,7 +93,7 @@ def filter_sim_meth_old(m1, m2, sim):
 
 
 def filter_sim_meth_basic(sim, m1, m2):
-    ncd1, _ = sim.ncd(m1.checksum.get_signature(), m2.checksum.get_signature())
+    ncd1, _, _ = sim.ncd(m1.checksum.get_signature(), m2.checksum.get_signature())
     return ncd1
 
 #    ncd2, _ = sim.ncd( m1.checksum.get_buff(), m2.checksum.get_buff() )
@@ -115,7 +115,7 @@ def filter_sort_meth_basic(j, x, value):
 
 
 def filter_sim_bb_basic(sim, bb1, bb2):
-    ncd, _ = sim.ncd(bb1.checksum.get_buff(), bb2.checksum.get_buff())
+    ncd, _, _ = sim.ncd(bb1.checksum.get_buff(), bb2.checksum.get_buff())
     return ncd
 
 

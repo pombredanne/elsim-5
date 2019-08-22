@@ -126,7 +126,7 @@ def split_elements(el, els):
 
 
 class Elsim:
-    def __init__(self, e1, e2, F, T=None, C=None, libnative=True, libpath="elsim/elsim/similarity/libsimilarity/libsimilarity.so"):
+    def __init__(self, e1, e2, F, T=None, C=None):
         self.e1 = e1
         self.e2 = e2
         self.F = F
@@ -137,11 +137,7 @@ class Elsim:
         if T != None:
             self.F[FILTER_SORT_VALUE] = T
 
-        if isinstance(libnative, str):
-            libpath = libnative
-            libnative = True
-
-        self.sim = SIMILARITY(libpath, libnative)
+        self.sim = SIMILARITY()
 
         if C != None:
             self.compressor = Compress.by_name(C)

@@ -526,8 +526,7 @@ class CSignature(object):
         return self.pcs.get_info(srules)
 
     def list_indb(self, output):
-        s = similarity.SIMILARITY(
-            "./elsim/elsim/similarity/libsimilarity/libsimilarity.so")
+        s = similarity.SIMILARITY()
         s.set_compress_type(similarity.Compress.ZLIB)
 
         buff = json.loads(read(output, binary=False))
@@ -560,8 +559,7 @@ class CSignature(object):
                     class_sim.append(base64.b64decode(ssign[1]))
                 nb += 1
 
-        s = similarity.SIMILARITY(
-            "./elsim/elsim/similarity/libsimilarity/libsimilarity.so")
+        s = similarity.SIMILARITY()
         s.set_compress_type(similarity.Compress.SNAPPY)
 
         self.__check_db(s, ids, meth_sim)

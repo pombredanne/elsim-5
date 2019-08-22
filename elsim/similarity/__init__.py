@@ -271,6 +271,7 @@ class SIMILARITY:
 
     The whole class works always with bytes!
     Therefore it is required to encode strings using an appropriate encoding scheme.
+    If str are supplied, they will automatically get encoded using UTF-8.
 
     To increase the computation speed, all inputs to methods of this class
     are cached. Adler32 hash is used as a key for checking the cache.
@@ -312,13 +313,20 @@ class SIMILARITY:
         """
         return self.s.set_compress_type(t)
 
+    @staticmethod
+    def _encode(s):
+        """Checks if bytes or encode with UTF-8"""
+        if isinstance(s, bytes):
+            return s
+        return s.encode('UTF-8')
+
     def compress(self, s1):
         """
         Returns the length of the compressed string
 
         :param bytes s1: the string to compress
         """
-        return self.s.compress(s1)
+        return self.s.compress(self._encode(s1))
 
     def ncd(self, s1, s2):
         """
@@ -331,7 +339,7 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.ncd(s1, s2)[0]
+        return self.s.ncd(self._encode(s1), self._encode(s2))[0]
 
     def ncs(self, s1, s2):
         """
@@ -341,7 +349,7 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.ncs(s1, s2)[0]
+        return self.s.ncs(self._encode(s1), self._encode(s2))[0]
 
     def cmid(self, s1, s2):
         """
@@ -353,7 +361,7 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.cmid(s1, s2)[0]
+        return self.s.cmid(self._encode(s1), self._encode(s2))[0]
 
     def kolmogorov(self, s1):
         """
@@ -366,7 +374,7 @@ class SIMILARITY:
 
         :param bytes s1: input string
         """
-        return self.s.kolmogorov(s1)
+        return self.s.kolmogorov(self._encode(s1))
 
     def bennett(self, s1):
         """
@@ -376,7 +384,7 @@ class SIMILARITY:
 
         :param bytes s1: input string
         """
-        return self.s.bennett(s1)
+        return self.s.bennett(self._encode(s1))
 
     def entropy(self, s1):
         """
@@ -384,7 +392,7 @@ class SIMILARITY:
 
         :param bytes s1: input
         """
-        return self.s.entropy(s1)
+        return self.s.entropy(self._encode(s1))
 
     def RDTSC(self):
         """
@@ -400,7 +408,7 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.levenshtein(s1, s2)
+        return self.s.levenshtein(self._encode(s1), self._encode(s2))
 
     def show(self):
         self.s.show()
