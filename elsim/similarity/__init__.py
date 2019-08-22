@@ -42,6 +42,7 @@ def entropy(data):
 
     return H
 
+
 class Compress(IntEnum):
     """Enum for the compression type"""
     ZLIB = 0
@@ -75,23 +76,23 @@ class SIMILARITYBase:
 
     def get_in_caches(self, s):
         try:
-            return self.__caches[ self.ctype ][ zlib.adler32( s ) ]
+            return self.__caches[self.ctype][zlib.adler32(s)]
         except KeyError:
             return 0
 
     def get_in_rcaches(self, s1, s2):
         try:
-            return self.__rcaches[ self.ctype ][ zlib.adler32( s1 + s2 ) ]
+            return self.__rcaches[self.ctype][zlib.adler32(s1 + s2)]
         except KeyError:
             try:
-                return self.__rcaches[ self.ctype ][ zlib.adler32( s2 + s1 ) ]
+                return self.__rcaches[self.ctype][zlib.adler32(s2 + s1)]
             except KeyError:
                 return -1, -1
 
     def add_in_caches(self, s, v):
-        h = zlib.adler32( s )
-        if h not in self.__caches[ self.ctype ]:
-            self.__caches[ self.ctype ][ h ] = v
+        h = zlib.adler32(s)
+        if h not in self.__caches[self.ctype]:
+            self.__caches[self.ctype][h] = v
 
     def add_in_rcaches(self, s, v):
         h = zlib.adler32(s)
@@ -103,13 +104,13 @@ class SIMILARITYBase:
             self.__caches[i] = {}
 
     def add_in_ecaches(self, s, v, r):
-        h = zlib.adler32( s )
+        h = zlib.adler32(s)
         if h not in self.__ecaches:
-            self.__ecaches[ h ] = (v, r)
+            self.__ecaches[h] = (v, r)
 
     def get_in_ecaches(self, s1):
         try:
-            return self.__ecaches[ zlib.adler32( s1 ) ]
+            return self.__ecaches[zlib.adler32(s1)]
         except KeyError:
             return -1, -1
 
@@ -124,8 +125,8 @@ class SIMILARITYBase:
 
     def show(self):
         print("ECACHES", len(self.__ecaches))
-        print("RCACHES", self.__nb_caches( self.__rcaches ))
-        print("CACHES", self.__nb_caches( self.__caches ))
+        print("RCACHES", self.__nb_caches(self.__rcaches))
+        print("CACHES", self.__nb_caches(self.__caches))
 
 
 class SIMILARITYNative(SIMILARITYBase):
@@ -179,7 +180,8 @@ class SIMILARITYPython(SIMILARITYBase):
     def set_compress_type(self, t):
         self.ctype = t
         if self.ctype not in (Compress.ZLIB, Compress.BZ2):
-            print("warning: compressor %s is not supported by python method (using ZLIB as fallback)" % t.name)
+            print(
+                "warning: compressor %s is not supported by python method (using ZLIB as fallback)" % t.name)
             self.ctype = Compress.ZLIB
 
     def compress(self, s1):
@@ -187,19 +189,19 @@ class SIMILARITYPython(SIMILARITYBase):
 
     def _compress(self, s1):
         if self.ctype == Compress.ZLIB:
-            return zlib.compress( s1, self.level )
+            return zlib.compress(s1, self.level)
         if self.ctype == Compress.BZ2:
-            return bz2.compress( s1, self.level )
+            return bz2.compress(s1, self.level)
 
     def _sim(self, s1, s2, func):
-        end = self.get_in_rcaches( s1, s2 )
+        end = self.get_in_rcaches(s1, s2)
         if end != -1:
             return end
 
         corig = self.get_in_caches(s1)
         ccmp = self.get_in_caches(s2)
 
-        res, corig, ccmp = func( s1, s2, corig, ccmp )
+        res, corig, ccmp = func(s1, s2, corig, ccmp)
 
         self.add_in_caches(s1, corig)
         self.add_in_caches(s2, ccmp)
@@ -226,19 +228,19 @@ class SIMILARITYPython(SIMILARITYBase):
         return res, s1size, s2size
 
     def ncd(self, s1, s2):
-        return self._sim( s1, s2, self._ncd )
+        return self._sim(s1, s2, self._ncd)
 
     def ncs(self, s1, s2):
         ncd, l1, l2 = self.ncd(s1, s2)
         return 1.0 - ncd, l1, l2
 
     def entropy(self, s1):
-        end, ret = self.get_in_ecaches( s1 )
+        end, ret = self.get_in_ecaches(s1)
         if end != -1:
             return end, ret
 
-        res = entropy( s1 )
-        self.add_in_ecaches( s1, res, 0 )
+        res = entropy(s1)
+        self.add_in_ecaches(s1, res, 0)
 
         return res
 
@@ -277,6 +279,7 @@ class SIMILARITY:
     of strings is compared.
 
     """
+
     def __init__(self, native_lib=True):
         """
 
@@ -413,7 +416,7 @@ class DBFormat(object):
 
         try:
             with open(self.filename, "r+") as fd:
-                self.D = json.load( fd )
+                self.D = json.load(fd)
         except IOError:
             print("Impossible to open filename: " + filename)
             self.D = {}
@@ -425,7 +428,7 @@ class DBFormat(object):
             self.H[i] = {}
             for j in self.D[i]:
                 if j == "NAME":
-                    self.N[ i ] = re.compile( self.D[i][j] )
+                    self.N[i] = re.compile(self.D[i][j])
                     continue
 
                 self.H[i][j] = {}
@@ -433,35 +436,35 @@ class DBFormat(object):
                     if isinstance(self.D[i][j][k], dict):
                         self.H[i][j][k] = set()
                         for e in self.D[i][j][k].keys():
-                            self.H[i][j][k].add( long(e) )
+                            self.H[i][j][k].add(long(e))
 
     def add_name(self, name, value):
         if name not in self.D:
-            self.D[ name ] = {}
+            self.D[name] = {}
 
-        self.D[ name ]["NAME"] = value
+        self.D[name]["NAME"] = value
 
     def add_element(self, name, sname, sclass, size, elem):
         try:
-            if elem not in self.D[ name ][ sname ][ sclass ]:
-                self.D[ name ][ sname ][ sclass ][ elem ] = size
-                self.D[ name ][ sname ][ "SIZE" ] += size
+            if elem not in self.D[name][sname][sclass]:
+                self.D[name][sname][sclass][elem] = size
+                self.D[name][sname]["SIZE"] += size
 
         except KeyError:
             if name not in self.D:
-                self.D[ name ] = {}
-                self.D[ name ][ sname ] = {}
-                self.D[ name ][ sname ][ "SIZE" ] = 0
-                self.D[ name ][ sname ][ sclass ] = {}
-            elif sname not in self.D[ name ]:
-                self.D[ name ][ sname ] = {}
-                self.D[ name ][ sname ][ "SIZE" ] = 0
-                self.D[ name ][ sname ][ sclass ] = {}
-            elif sclass not in self.D[ name ][ sname ]:
-                self.D[ name ][ sname ][ sclass ] = {}
+                self.D[name] = {}
+                self.D[name][sname] = {}
+                self.D[name][sname]["SIZE"] = 0
+                self.D[name][sname][sclass] = {}
+            elif sname not in self.D[name]:
+                self.D[name][sname] = {}
+                self.D[name][sname]["SIZE"] = 0
+                self.D[name][sname][sclass] = {}
+            elif sclass not in self.D[name][sname]:
+                self.D[name][sname][sclass] = {}
 
-            self.D[ name ][ sname ][ "SIZE" ] += size
-            self.D[ name ][ sname ][ sclass ][ elem ] = size
+            self.D[name][sname]["SIZE"] += size
+            self.D[name][sname][sclass][elem] = size
 
     def is_present(self, elem):
         for i in self.D:
@@ -482,7 +485,8 @@ class DBFormat(object):
                 info[i][j] = {}
 
                 for k in self.H[i][j]:
-                    val = [self.H[i][j][k].intersection(elems), len(self.H[i][j][k]), 0, 0]
+                    val = [self.H[i][j][k].intersection(
+                        elems), len(self.H[i][j][k]), 0, 0]
 
                     size = 0
                     for z in val[0]:
@@ -494,7 +498,7 @@ class DBFormat(object):
                     if val[3] != 0:
                         ret[i][j][k] = val
 
-                info[i][j][ "SIZE" ] = self.D[i][j]["SIZE"]
+                info[i][j]["SIZE"] = self.D[i][j]["SIZE"]
 
         return ret, info
 
@@ -503,7 +507,7 @@ class DBFormat(object):
         for j in classes:
             for i in self.N:
                 if self.N[i].search(j) != None:
-                    m.add( i )
+                    m.add(i)
         return m
 
     def show(self):
