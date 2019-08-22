@@ -467,39 +467,163 @@ static PyObject *similarity_compress(PyObject *self, PyObject *args) {
 }
 
 static PyObject *similarity_entropy(PyObject *self, PyObject *args) {
-    return NULL;
+    // Takes bytes and returns double
+    Py_buffer data;
+
+    if (!PyArg_ParseTuple(args, "y*", &data))
+        return NULL;
+
+    double e = entropy(data.buf, data.len);
+
+    PyObject *ret = Py_BuildValue("d", e);
+    PyBuffer_Release(&data);
+    return ret;
 }
 
 static PyObject *similarity_levenshtein(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes two byte strings and return size_t
+    Py_buffer s1;
+    Py_buffer s2;
+
+    if (!PyArg_ParseTuple(args, "y*y*", &s1, &s2))
+        return NULL;
+
+    size_t res = levenshtein(s1.buf, s1.len, s2.buf, s2.len);
+    PyObject *ret = Py_BuildValue("n", res);
+    PyBuffer_Release(&s1);
+    PyBuffer_Release(&s2);
+    return ret;
 }
 
 static PyObject *similarity_kolmogorov(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes compression level and bytes, returns unsigned int
+    Py_buffer data;
+    int level;
+
+    if (!PyArg_ParseTuple(args, "iy*", &level, &data))
+        return NULL;
+
+    unsigned int res = kolmogorov(level, data.buf, data.len);
+    PyObject *ret = Py_BuildValue("I", res);
+    PyBuffer_Release(&data);
+    return ret;
 }
 
 static PyObject *similarity_bennett(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes compression level and bytes, returns double
+    Py_buffer data;
+    int level;
+
+    if (!PyArg_ParseTuple(args, "iy*", &level, &data))
+        return NULL;
+
+    double res = bennett(level, data.buf, data.len);
+    PyObject *ret = Py_BuildValue("d", res);
+    PyBuffer_Release(&data);
+    return ret;
 }
 
 static PyObject *similarity_RDTSC(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes no argumetn and returns double
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+    PyObject *ret = Py_BuildValue("d", RDTSC());
+    return ret;
 }
 
 static PyObject *similarity_ncd(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes level and two byte inputs and optional two compressed lengths, returns float
+    Py_buffer s1;
+    Py_buffer s2;
+    Py_ssize_t s1_cached = 0;
+    Py_ssize_t s2_cached = 0;
+    int level;
+
+    if (!PyArg_ParseTuple(args, "iy*y*|nn", &level, &s1, &s2, &s1_cached, &s2_cached))
+        return NULL;
+
+    // create the libsimilarity struct
+    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, s1_cached, s2_cached};
+    // ncd returns -1 on any error and 0 if it suceeded.
+    int r = ncd(level, &simstruct);
+    if (r != 0) {
+        PyErr_SetString(PyExc_ValueError, "An error occured during calculation");
+        PyBuffer_Release(&s1);
+        PyBuffer_Release(&s2);
+        return NULL;
+    }
+
+    PyObject *ret = Py_BuildValue("f", simstruct.res);
+    PyBuffer_Release(&s1);
+    PyBuffer_Release(&s2);
+    return ret;
 }
 
 static PyObject *similarity_ncs(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes level and two byte inputs and optional two compressed lengths, returns float
+    Py_buffer s1;
+    Py_buffer s2;
+    Py_ssize_t s1_cached = 0;
+    Py_ssize_t s2_cached = 0;
+    int level;
+
+    if (!PyArg_ParseTuple(args, "iy*y*|nn", &level, &s1, &s2, &s1_cached, &s2_cached))
+        return NULL;
+
+    // create the libsimilarity struct
+    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, s1_cached, s2_cached};
+    // ncd returns -1 on any error and 0 if it suceeded.
+    int r = ncs(level, &simstruct);
+    if (r != 0) {
+        PyErr_SetString(PyExc_ValueError, "An error occured during calculation");
+        PyBuffer_Release(&s1);
+        PyBuffer_Release(&s2);
+        return NULL;
+    }
+
+    PyObject *ret = Py_BuildValue("f", simstruct.res);
+    PyBuffer_Release(&s1);
+    PyBuffer_Release(&s2);
+    return ret;
 }
 
 static PyObject *similarity_cmid(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes level and two byte inputs and optional two compressed lengths, returns float
+    Py_buffer s1;
+    Py_buffer s2;
+    Py_ssize_t s1_cached = 0;
+    Py_ssize_t s2_cached = 0;
+    int level;
+
+    if (!PyArg_ParseTuple(args, "iy*y*|nn", &level, &s1, &s2, &s1_cached, &s2_cached))
+        return NULL;
+
+    // create the libsimilarity struct
+    libsimilarity_t simstruct = {s1.buf, s1.len, s2.buf, s2.len, s1_cached, s2_cached};
+    // ncd returns -1 on any error and 0 if it suceeded.
+    int r = cmid(level, &simstruct);
+    if (r != 0) {
+        PyErr_SetString(PyExc_ValueError, "An error occured during calculation");
+        PyBuffer_Release(&s1);
+        PyBuffer_Release(&s2);
+        return NULL;
+    }
+
+    PyObject *ret = Py_BuildValue("f", simstruct.res);
+    PyBuffer_Release(&s1);
+    PyBuffer_Release(&s2);
+    return ret;
 }
 
 static PyObject *similarity_set_compress_type(PyObject *self, PyObject *args) {
-    return NULL;
+    // takes and integer and returns nothing
+    int mode;
+
+    if (!PyArg_ParseTuple(args, "i", &mode))
+        return NULL;
+
+    set_compress_type(mode);
+    return Py_BuildValue("");  // return None
 }
 
 
