@@ -293,18 +293,17 @@ double entropy(void *orig, size_t size_orig)
     double e;
     char a;
     int i;
-    int byte_counters[256];
+    unsigned int byte_counters[256] = {0};
     char *c_orig = orig;
 
     e = 0.0;
-    memset(byte_counters, '\0', sizeof(byte_counters));
 
-    for(i=0; i < size_orig; i++) {
+    for(i = 0; i < size_orig; i++) {
         a = c_orig[i];
-        byte_counters[ (int)a ] ++;
+        byte_counters[(uint8_t)a]++;
     }  
 
-    for (i=0; i < 256; i++) {
+    for (i = 0; i < 256; i++) {
         double p_i  = (double)byte_counters[i] / (double)size_orig;
         if (p_i > 0.0) {
             e += - p_i*log2( p_i );
