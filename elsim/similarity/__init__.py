@@ -1,3 +1,8 @@
+"""
+Similarity measure module
+
+This module implements similarity and complexity measures
+"""
 # This file is part of Elsim
 #
 # Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
@@ -15,14 +20,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
-import zlib
-import bz2
-import math
 import json
 import re
 from enum import IntEnum
 from elsim.similarity import libsimilarity as ls
-
 
 # Alias
 entropy = ls.entropy
