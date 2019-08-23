@@ -27,7 +27,7 @@ from androguard.core.bytecodes import dvm
 
 from elsim import debug, get_debug
 import elsim
-from elsim.filters import filter_sort_meth_basic
+from elsim.filters import filter_sort_meth_basic, FilterNone
 
 
 # FIXME: what was this?!
@@ -58,11 +58,6 @@ class FilterSkip:
             self.size = e
 
 
-class FilterNone:
-    def skip(self, e):
-        return False
-
-
 FILTERS_DALVIK_SIM = {
     elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
     elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
@@ -76,7 +71,7 @@ FILTERS_DALVIK_SIM_STRING = {
     elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_string,
     elsim.FILTER_SIM_METH: filter_sim_meth_string,
     elsim.FILTER_SORT_METH: filter_sort_meth_string,
-    elsim.FILTER_SKIPPED_METH: FilterNone(),
+    elsim.FILTER_SKIPPED_METH: FilterNone,
 }
 
 FILTERS_DALVIK_BB = {
@@ -84,7 +79,7 @@ FILTERS_DALVIK_BB = {
     elsim.FILTER_CHECKSUM_METH: filter_checksum_bb_basic,
     elsim.FILTER_SIM_METH: filter_sim_bb_basic,
     elsim.FILTER_SORT_METH: filter_sort_bb_basic,
-    elsim.FILTER_SKIPPED_METH: FilterNone(),
+    elsim.FILTER_SKIPPED_METH: FilterNone,
 }
 
 FILTERS_DALVIK_DIFF_BB = {
