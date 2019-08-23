@@ -20,6 +20,7 @@
 
 import hashlib
 import re
+from operator import itemgetter
 
 from androguard.core.bytecodes import dvm
 
@@ -93,16 +94,12 @@ def filter_sim_meth_old(m1, m2, sim):
 
 
 def filter_sim_meth_basic(sim, m1, m2):
-    ncd1, _, _ = sim.ncd(m1.checksum.get_signature(), m2.checksum.get_signature())
+    ncd1 = sim.ncd(m1.checksum.get_signature(), m2.checksum.get_signature())
     return ncd1
-
-#    ncd2, _ = sim.ncd( m1.checksum.get_buff(), m2.checksum.get_buff() )
-
-#    return (ncd1 + ncd2) / 2.0
 
 
 def filter_sort_meth_basic(j, x, value):
-    z = sorted(x.iteritems(), key=lambda k, v: (v, k))
+    z = sorted(x.items(), key=itemgetter(1))
 
     if get_debug():
         for i in z:
@@ -115,7 +112,7 @@ def filter_sort_meth_basic(j, x, value):
 
 
 def filter_sim_bb_basic(sim, bb1, bb2):
-    ncd, _, _ = sim.ncd(bb1.checksum.get_buff(), bb2.checksum.get_buff())
+    ncd = sim.ncd(bb1.checksum.get_buff(), bb2.checksum.get_buff())
     return ncd
 
 
@@ -345,7 +342,7 @@ class Method(object):
                     for b2 in bb2:
                         b_z[b2] = func_sim_bb(bb1[b1], bb2[b2], self.sim)
 
-                sorted_bb = sorted(b_z.iteritems(), key=lambda k, v: (v, k))
+                sorted_bb = sorted(b_z.items(), key=itemgetter(1))
 
                 debug("\t\t%s" % sorted_bb[:2])
 
@@ -501,7 +498,7 @@ def filter_element_bb_basic(el, e):
 
 
 def filter_sort_bb_basic(j, x, value):
-    z = sorted(x.iteritems(), key=lambda k, v: (v, k))
+    z = sorted(x.items(), key=itemgetter(1))
 
     if get_debug():
         for i in z:
@@ -591,12 +588,12 @@ def filter_checksum_meth_string(m1, sim):
 
 
 def filter_sim_meth_string(sim, m1, m2):
-    ncd1, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
+    ncd1 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd1
 
 
 def filter_sort_meth_string(j, x, value):
-    z = sorted(x.iteritems(), key=lambda k, v: (v, k))
+    z = sorted(x.items(), key=itemgetter(1))
 
     if get_debug():
         for i in z:

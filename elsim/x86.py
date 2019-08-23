@@ -19,6 +19,7 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import hashlib
+from operator import itemgetter
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
@@ -69,12 +70,12 @@ def filter_checksum_meth_basic(f, sim):
 
 
 def filter_sim_meth_basic(sim, m1, m2):
-    ncd2, _, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
+    ncd2 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd2
 
 
 def filter_sort_meth_basic(j, x, value):
-    z = sorted(x.iteritems(), key=lambda k, v: (v, k))
+    z = sorted(x.items(), key=itemgetter(1))
 
     if get_debug():
         for i in z:

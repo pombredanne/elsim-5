@@ -19,6 +19,7 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import hashlib
+from operator import itemgetter
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
@@ -70,16 +71,12 @@ def filter_checksum_meth_basic(m1, sim):
 
 def filter_sim_meth_basic(sim, m1, m2):
     sim.set_compress_type(Compress.XZ)
-    ncd1, _ = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
+    ncd1 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd1
-
-    #ncd1, _ = sim.ncd( m1.checksum.get_signature(), m2.checksum.get_signature() )
-    #ncd2, _ = sim.ncd( m1.checksum.get_buff(), m2.checksum.get_buff() )
-    # return (ncd1 + ncd2) / 2.0
 
 
 def filter_sort_meth_basic(j, x, value):
-    z = sorted(x.iteritems(), key=lambda k, v: (v, k))
+    z = sorted(x.items(), key=itemgetter(1))
 
     if get_debug():
         for i in z:
@@ -106,8 +103,7 @@ class Text(object):
         self.sha256 = None
 
     def get_info(self):
-        return "%d %s" % (len(self.string), repr(self.string))
-        # return "%d %s" % (len(self.string), "")
+        return "%d '%s'" % (len(self.string), repr(self.string))
 
     def set_checksum(self, fm):
         self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
@@ -115,6 +111,9 @@ class Text(object):
 
     def getsha256(self):
         return self.sha256
+
+    def __repr__(self):
+        return self.get_info()
 
 
 def filter_element_meth_basic(el, e):

@@ -25,10 +25,6 @@ log_elsim = logging.getLogger("elsim")
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
 log_elsim.addHandler(console_handler)
-log_runtime = logging.getLogger("elsim.runtime")          # logs at runtime
-log_interactive = logging.getLogger(
-    "elsim.interactive")  # logs in interactive functions
-log_loading = logging.getLogger("elsim.loading")          # logs when loading
 
 
 def set_debug():
@@ -40,16 +36,16 @@ def get_debug():
 
 
 def warning(x):
-    log_runtime.warning(x)
+    log_elsim.warning(x)
 
 
 def error(x):
-    log_runtime.error(x)
+    log_elsim.error(x)
     raise Exception("waht")
 
 
 def debug(x):
-    log_runtime.debug(x)
+    log_elsim.debug(x)
 
 
 FILTER_ELEMENT_METH = "FILTER_ELEMENT_METH"
@@ -61,7 +57,8 @@ FILTER_SIM_METH = "FILTER_SIM_METH"
 FILTER_SORT_METH = "FILTER_SORT_METH"
 # value which used in the sort method to eliminate not interesting comparisons
 FILTER_SORT_VALUE = "FILTER_SORT_VALUE"
-FILTER_SKIPPED_METH = "FILTER_SKIPPED_METH"       # object to skip elements
+# object to skip elements
+FILTER_SKIPPED_METH = "FILTER_SKIPPED_METH"
 # function to modify values of the similarity
 FILTER_SIM_VALUE_METH = "FILTER_SIM_VALUE_METH"
 
@@ -80,7 +77,7 @@ SIMILARITY_ELEMENTS = "similarity_elements"
 SIMILARITY_SORT_ELEMENTS = "similarity_sort_elements"
 
 
-class ElsimNeighbors(object):
+class ElsimNeighbors:
     def __init__(self, x, ys):
         import numpy as np
         from sklearn.neighbors import NearestNeighbors
@@ -112,57 +109,91 @@ class ElsimNeighbors(object):
         return l
 
 
-def split_elements(el, els):
-    e1 = {}
-    for i in els:
-        e1[i] = el.get_associated_element(i)
-    return e1
+def split_elements(element, iterable):
+    """Returns a list of associated elements from the given element"""
+    return {i: element.get_associated_element(i) for i in iterable}
 
 
 class Proxy:
     """
-    This is a basic Proxy class for any iterable.
+    Proxy can be used as hashable iterable for the use with :class:`Elsim`.
     """
     def __init__(self, iterable):
         self.iterable = iterable
 
-    def get_elements(self):
+    def __iter__(self):
         yield from self.iterable
+
+    def __len__(self):
+        return len(self.iterable)
 
 
 class Elsim:
     """
     This is the main class to use when calculating similarities between objects.
-    
+
     In order to have a universal method for every object you like to compare,
-    you have to implement a Proxy object first.
-    Then, you pass your object into the Proxy and pass the Proxy to Elsim.
+    you have to implement some iterator, which is hashable, for your objects.
+    The Proxy class is such a wrapper, which supports hashing and is an iterator
+    for generic iterators.
+
+    The next important part is the Filter.
+    A Filter is basically a dictionary with some pre-defined keys, which has as value
+    some function pointers.
+    Each function is called for specific tasks and types of the input.
+    Such a function must return and object which has the following properties:
+    :code:`set_checksum`, :code:`getsha256`.
+
+    The filter is required to have the following keys:
+
+    * FILTER_ELEMENT_METH
+    * FILTER_SKIPPED_METH
+    * FILTER_CHECKSUM_METH
+    * FILTER_SIM_METH
+    * FILTER_SIM_VALUE_METH
+    * FILTER_SORT_METH
+    * FILTER_SORT_VALUE
     """
-    def __init__(self, e1, e2, F, T=None, C="SNAPPY"):
+    def __init__(self, e1, e2, F, threshold=None, C="SNAPPY"):
         """
         
         :param Proxy e1: the first element to compare
         :param Proxy e2: the second element to compare
-        :param F: Some Filter dictionary
-        :param T: threshold ??? for what ???
+        :param dict F: Some Filter dictionary
+        :param float threshold: threshold for filtering similar items, which overwrites the one in the Filter
         :param str C: compression method name
         """
-        # FIXME: instead of using this Proxy here, we could simply use an iterator!
         self.e1 = e1
         self.e2 = e2
-        self.F = F
+        if F is None:
+            raise ValueError("A valid filter dict is required!")
 
-        set_debug()
-
-        if T != None:
-            self.F[FILTER_SORT_VALUE] = T
+        if threshold is not None:
+            # overwrite the threshold if specified
+            debug("Overwriting threshold {} with {}".format(F[FILTER_SORT_VALUE], threshold))
+            F[FILTER_SORT_VALUE] = threshold
 
         self.sim = SIMILARITY()
 
         self.compressor = Compress.by_name(C.upper())
         self.sim.set_compress_type(self.compressor)
 
-        self.filters = {}
+        # Initialize the filters
+        # FIXME: this could be replaced by attributes on this class instead of the large dict.
+        self.filters = {
+            BASE: F,
+            ELEMENTS: dict(),
+            HASHSUM: dict(),
+            IDENTICAL_ELEMENTS: dict(),
+            SIMILAR_ELEMENTS: [],
+            HASHSUM_SIMILAR_ELEMENTS: [],
+            NEW_ELEMENTS: set(),
+            HASHSUM_NEW_ELEMENTS: [],
+            DELETED_ELEMENTS: [],
+            SKIPPED_ELEMENTS: [],
+            SIMILARITY_ELEMENTS: dict(),
+            SIMILARITY_SORT_ELEMENTS: dict(),
+            }
 
         self._init_filters()
         self._init_index_elements()
@@ -171,77 +202,57 @@ class Elsim:
         self._init_new_elements()
 
     def _init_filters(self):
-        self.filters = {}
-        self.filters[BASE] = {}
-        self.filters[BASE].update(self.F)
-        self.filters[ELEMENTS] = {}
-        self.filters[HASHSUM] = {}
-        self.filters[IDENTICAL_ELEMENTS] = set()
-
-        self.filters[SIMILAR_ELEMENTS] = []
-        self.filters[HASHSUM_SIMILAR_ELEMENTS] = []
-        self.filters[NEW_ELEMENTS] = set()
-        self.filters[HASHSUM_NEW_ELEMENTS] = []
-        self.filters[DELETED_ELEMENTS] = []
-        self.filters[SKIPPED_ELEMENTS] = []
-
+        """Initialize all the dictionary structures"""
         self.filters[ELEMENTS][self.e1] = []
         self.filters[HASHSUM][self.e1] = []
 
         self.filters[ELEMENTS][self.e2] = []
         self.filters[HASHSUM][self.e2] = []
 
-        self.filters[SIMILARITY_ELEMENTS] = {}
-        self.filters[SIMILARITY_SORT_ELEMENTS] = {}
-
-        self.set_els = {}
-        self.ref_set_els = {}
-        self.ref_set_ident = {}
+        self.set_els = dict()
+        self.ref_set_els = dict()
+        self.ref_set_ident = dict()
 
     def _init_index_elements(self):
-        self.__init_index_elements(self.e1, 1)
+        self.__init_index_elements(self.e1)
         self.__init_index_elements(self.e2)
 
-    def __init_index_elements(self, ce, init=0):
-        self.set_els[ce] = set()
-        self.ref_set_els[ce] = {}
-        self.ref_set_ident[ce] = {}
+    def __init_index_elements(self, iterable):
+        self.set_els[iterable] = set()
+        self.ref_set_els[iterable] = {}
+        self.ref_set_ident[iterable] = {}
 
-        for ae in ce.get_elements():
-            e = self.filters[BASE][FILTER_ELEMENT_METH](ae, ce)
+        for element in iterable:
+            e = self.filters[BASE][FILTER_ELEMENT_METH](element, iterable)
 
             if self.filters[BASE][FILTER_SKIPPED_METH].skip(e):
                 self.filters[SKIPPED_ELEMENTS].append(e)
                 continue
 
-            self.filters[ELEMENTS][ce].append(e)
+            self.filters[ELEMENTS][iterable].append(e)
             fm = self.filters[BASE][FILTER_CHECKSUM_METH](e, self.sim)
             e.set_checksum(fm)
 
             sha256 = e.getsha256()
-            self.filters[HASHSUM][ce].append(sha256)
+            self.filters[HASHSUM][iterable].append(sha256)
 
-            if sha256 not in self.set_els[ce]:
-                self.set_els[ce].add(sha256)
-                self.ref_set_els[ce][sha256] = e
+            if sha256 not in self.set_els[iterable]:
+                self.set_els[iterable].add(sha256)
+                self.ref_set_els[iterable][sha256] = e
 
-                self.ref_set_ident[ce][sha256] = []
-            self.ref_set_ident[ce][sha256].append(e)
+                self.ref_set_ident[iterable][sha256] = []
+            self.ref_set_ident[iterable][sha256].append(e)
 
     def _init_similarity(self):
-        intersection_elements = self.set_els[self.e2].intersection(
-            self.set_els[self.e1])
-        difference_elements = self.set_els[self.e2].difference(
-            intersection_elements)
+        intersection_elements = self.set_els[self.e2].intersection(self.set_els[self.e1])
+        difference_elements = self.set_els[self.e2].difference(intersection_elements)
 
-        self.filters[IDENTICAL_ELEMENTS].update(
-            [self.ref_set_els[self.e1][i] for i in intersection_elements])
-        available_e2_elements = [self.ref_set_els[self.e2][i]
-                                 for i in difference_elements]
+        self.filters[IDENTICAL_ELEMENTS].update([self.ref_set_els[self.e1][i] for i in intersection_elements])
+        available_e2_elements = [self.ref_set_els[self.e2][i] for i in difference_elements]
 
         # Check if some elements in the first file has been modified
         for j in self.filters[ELEMENTS][self.e1]:
-            self.filters[SIMILARITY_ELEMENTS][j] = {}
+            self.filters[SIMILARITY_ELEMENTS][j] = dict()
 
             #debug("SIM FOR %s" % (j.get_info()))
             if j.getsha256() not in self.filters[HASHSUM][self.e2]:
@@ -249,28 +260,18 @@ class Elsim:
                 # for k in eln.cmp_elements():
                 for k in available_e2_elements:
                     #debug("%s" % k.get_info())
-                    self.filters[SIMILARITY_ELEMENTS][j][k] = self.filters[BASE][FILTER_SIM_METH](
-                        self.sim, j, k)
+                    self.filters[SIMILARITY_ELEMENTS][j][k] = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
                     if j.getsha256() not in self.filters[HASHSUM_SIMILAR_ELEMENTS]:
                         self.filters[SIMILAR_ELEMENTS].append(j)
-                        self.filters[HASHSUM_SIMILAR_ELEMENTS].append(
-                            j.getsha256())
+                        self.filters[HASHSUM_SIMILAR_ELEMENTS].append(j.getsha256())
 
     def _init_sort_elements(self):
         deleted_elements = []
         for j in self.filters[SIMILAR_ELEMENTS]:
-            #debug("SORT FOR %s" % (j.get_info()))
+            sort_h = self.filters[BASE][FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.filters[BASE][FILTER_SORT_VALUE])
+            self.filters[SIMILARITY_SORT_ELEMENTS][j] = set(i[0] for i in sort_h)
 
-            sort_h = self.filters[BASE][FILTER_SORT_METH](
-                j, self.filters[SIMILARITY_ELEMENTS][j], self.filters[BASE][FILTER_SORT_VALUE])
-            self.filters[SIMILARITY_SORT_ELEMENTS][j] = set(
-                i[0] for i in sort_h)
-
-            ret = True
             if sort_h == []:
-                ret = False
-
-            if ret == False:
                 deleted_elements.append(j)
 
         for j in deleted_elements:
@@ -297,8 +298,7 @@ class Elsim:
                     if ok:
                         if j.getsha256() not in self.filters[HASHSUM_NEW_ELEMENTS]:
                             self.filters[NEW_ELEMENTS].add(j)
-                            self.filters[HASHSUM_NEW_ELEMENTS].append(
-                                j.getsha256())
+                            self.filters[HASHSUM_NEW_ELEMENTS].append(j.getsha256())
 
     def get_similar_elements(self):
         """ Return the similar elements
@@ -339,20 +339,22 @@ class Elsim:
     def show_element(self, i, details=True):
         print("\t", i.get_info())
 
-        if details:
-            if i.getsha256() == None:
-                pass
-            elif i.getsha256() in self.ref_set_els[self.e2]:
-                if len(self.ref_set_ident[self.e2][i.getsha256()]) > 1:
-                    for ident in self.ref_set_ident[self.e2][i.getsha256()]:
-                        print("\t\t-->", ident.get_info())
-                else:
-                    print(
-                        "\t\t-->", self.ref_set_els[self.e2][i.getsha256()].get_info())
+        if not details:
+            return
+
+        if i.getsha256() is None:
+            pass
+        elif i.getsha256() in self.ref_set_els[self.e2]:
+            if len(self.ref_set_ident[self.e2][i.getsha256()]) > 1:
+                for ident in self.ref_set_ident[self.e2][i.getsha256()]:
+                    print("\t\t-->", ident.get_info())
             else:
-                for j in self.filters[SIMILARITY_SORT_ELEMENTS][i]:
-                    print("\t\t-->", j.get_info(),
-                          self.filters[SIMILARITY_ELEMENTS][i][j])
+                print(
+                    "\t\t-->", self.ref_set_els[self.e2][i.getsha256()].get_info())
+        else:
+            for j in self.filters[SIMILARITY_SORT_ELEMENTS][i]:
+                print("\t\t-->", j.get_info(),
+                      self.filters[SIMILARITY_ELEMENTS][i][j])
 
     def get_element_info(self, i):
         l = []
@@ -372,6 +374,7 @@ class Elsim:
     def get_similarity_value(self, new=True):
         values = []
 
+        # FIXME: Why the fallback to BZ2 here? Should we not use the compression specified at the beginning?
         self.sim.set_compress_type(Compress.BZ2)
 
         for j in self.filters[SIMILAR_ELEMENTS]:
@@ -384,7 +387,7 @@ class Elsim:
 
         values.extend([self.filters[BASE][FILTER_SIM_VALUE_METH](0.0)
                        for i in self.filters[IDENTICAL_ELEMENTS]])
-        if new == True:
+        if new:
             values.extend([self.filters[BASE][FILTER_SIM_VALUE_METH](1.0)
                            for i in self.filters[NEW_ELEMENTS]])
         else:
@@ -403,6 +406,9 @@ class Elsim:
         return (similarity_value/len(values)) * 100
 
     def show(self):
+        """
+        Print information about the elements to stdout
+        """
         print("Elements:")
         print("\t IDENTICAL:\t", len(self.get_identical_elements()))
         print("\t SIMILAR: \t", len(self.get_similar_elements()))
