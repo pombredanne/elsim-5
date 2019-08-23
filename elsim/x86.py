@@ -23,12 +23,7 @@ from operator import itemgetter
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
-
-
-def filter_sim_value_meth(v):
-    if v >= 0.2:
-        return 1.0
-    return v
+from elsim.filters import filter_sim_value_meth
 
 
 class CheckSumFunc(object):

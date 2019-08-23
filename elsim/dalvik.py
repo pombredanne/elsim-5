@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-
+"""
+This module encapsultes dalvik code for the use with elsim
+"""
 # This file is part of Elsim
 #
 # Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
@@ -26,19 +27,78 @@ from androguard.core.bytecodes import dvm
 
 from elsim import debug, get_debug
 import elsim
+from elsim.filters import filter_sim_value_meth
 
 
 # FIXME: what was this?!
 DEFAULT_SIGNATURE = 'L0_4'
 
 
-def filter_sim_value_meth(v):
-    if v >= 0.2:
-        return 1.0
-    return v
+class FilterSkip:
+    def __init__(self, size, regexp):
+        self.size = size
+        self.regexp = regexp
+
+    def skip(self, m):
+        if self.size != None and m.get_length() < self.size:
+            return True
+
+        if self.regexp != None and re.match(self.regexp, m.m.get_class_name()) != None:
+            return True
+
+        return False
+
+    def set_regexp(self, e):
+        self.regexp = e
+
+    def set_size(self, e):
+        if e != None:
+            self.size = int(e)
+        else:
+            self.size = e
 
 
-class CheckSumMeth(object):
+class FilterNone:
+    def skip(self, e):
+        return False
+
+
+FILTERS_DALVIK_SIM = {
+    elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
+    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
+    elsim.FILTER_SIM_METH: filter_sim_meth_basic,
+    elsim.FILTER_SORT_METH: filter_sort_meth_basic,
+    elsim.FILTER_SORT_VALUE: 0.4,
+    elsim.FILTER_SKIPPED_METH: FilterSkip(None, None),
+    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
+}
+
+FILTERS_DALVIK_SIM_STRING = {
+    elsim.FILTER_ELEMENT_METH: filter_element_meth_string,
+    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_string,
+    elsim.FILTER_SIM_METH: filter_sim_meth_string,
+    elsim.FILTER_SORT_METH: filter_sort_meth_string,
+    elsim.FILTER_SORT_VALUE: 0.8,
+    elsim.FILTER_SKIPPED_METH: FilterNone(),
+    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
+}
+
+FILTERS_DALVIK_BB = {
+    elsim.FILTER_ELEMENT_METH: filter_element_bb_basic,
+    elsim.FILTER_CHECKSUM_METH: filter_checksum_bb_basic,
+    elsim.FILTER_SIM_METH: filter_sim_bb_basic,
+    elsim.FILTER_SORT_METH: filter_sort_bb_basic,
+    elsim.FILTER_SORT_VALUE: 0.8,
+    elsim.FILTER_SKIPPED_METH: FilterNone(),
+    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
+}
+
+FILTERS_DALVIK_DIFF_BB = {
+    elsim.DIFF: filter_diff_bb,
+}
+
+
+class CheckSumMeth:
     def __init__(self, m1, sim):
         self.m1 = m1
         self.sim = sim
@@ -58,6 +118,7 @@ class CheckSumMeth(object):
 
     def get_signature(self):
         if self.signature == None:
+            # FIXME
             self.signature = self.m1.vmx.get_method_signature(
                 self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
             self.signature_entropy = self.sim.entropy(self.signature)
@@ -66,6 +127,7 @@ class CheckSumMeth(object):
 
     def get_signature_entropy(self):
         if self.signature == None:
+            # FIXME
             self.signature = self.m1.vmx.get_method_signature(
                 self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
             self.signature_entropy = self.sim.entropy(self.signature)
@@ -116,7 +178,7 @@ def filter_sim_bb_basic(sim, bb1, bb2):
     return ncd
 
 
-class CheckSumBB(object):
+class CheckSumBB:
     def __init__(self, basic_block, sim):
         self.basic_block = basic_block
         self.buff = ""
@@ -144,7 +206,7 @@ DIFF_INS_TAG = {
 }
 
 
-class DiffBB(object):
+class DiffBB:
     def __init__(self, bb1, bb2, info):
         self.bb1 = bb1
         self.bb2 = bb2
@@ -242,7 +304,7 @@ class DiffBB(object):
             print("\t\t", i[0], i[1], i[2].get_name(), i[2].get_output())
 
 
-class NewBB(object):
+class NewBB:
     def __init__(self, bb):
         self.bb = bb
 
@@ -264,7 +326,7 @@ class NewBB(object):
         self.childs = childs
 
 
-class DiffINS(object):
+class DiffINS:
     def __init__(self, add_ins, remove_ins):
         self.add_ins = add_ins
         self.remove_ins = remove_ins
@@ -277,7 +339,7 @@ DIFF_BB_TAG = {
 }
 
 
-class Method(object):
+class Method:
     def __init__(self, vm, vmx, m):
         self.m = m
         self.vm = vm
@@ -430,7 +492,7 @@ class Method(object):
         return self.sha256
 
     def get_length(self):
-        if self.m.get_code() == None:
+        if self.m.get_code() is None:
             return 0
         return self.m.get_code().get_length()
 
@@ -454,10 +516,6 @@ class Method(object):
         for b in self.nbb:
             print("\t\t", self.nbb[b].name)
 
-        # show diff !
-        if details:
-            bytecode.PrettyShow2(self.bbs, exclude)
-
     def show2(self, details=False):
         print(self.m.get_class_name(), self.m.get_name(),
               self.m.get_descriptor(), end=' ')
@@ -475,7 +533,7 @@ def filter_element_meth_basic(el, e):
     return Method(e.vm, e.vmx, el)
 
 
-class BasicBlock(object):
+class BasicBlock:
     def __init__(self, bb):
         self.bb = bb
 
@@ -510,51 +568,12 @@ def filter_sort_bb_basic(j, x, value):
     return z[:1]
 
 
-class FilterSkip(object):
-    def __init__(self, size, regexp):
-        self.size = size
-        self.regexp = regexp
-
-    def skip(self, m):
-        if self.size != None and m.get_length() < self.size:
-            return True
-
-        if self.regexp != None and re.match(self.regexp, m.m.get_class_name()) != None:
-            return True
-
-        return False
-
-    def set_regexp(self, e):
-        self.regexp = e
-
-    def set_size(self, e):
-        if e != None:
-            self.size = int(e)
-        else:
-            self.size = e
-
-
-class FilterNone(object):
-    def skip(self, e):
-        return False
-
-
-FILTERS_DALVIK_SIM = {
-    elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
-    elsim.FILTER_SIM_METH: filter_sim_meth_basic,
-    elsim.FILTER_SORT_METH: filter_sort_meth_basic,
-    elsim.FILTER_SORT_VALUE: 0.4,
-    elsim.FILTER_SKIPPED_METH: FilterSkip(None, None),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
-}
-
-
-class StringVM(object):
+class StringVM:
     def __init__(self, el):
         self.el = el
 
     def set_checksum(self, fm):
+        # FIXME: we can use the MUTF8 strings here
         self.sha256 = hashlib.sha256(fm.get_buff().encode('UTF-8')).hexdigest()
         self.checksum = fm
 
@@ -572,7 +591,7 @@ def filter_element_meth_string(el, e):
     return StringVM(el)
 
 
-class CheckSumString(object):
+class CheckSumString:
     def __init__(self, m1, sim):
         self.m1 = m1
         self.sim = sim
@@ -605,28 +624,10 @@ def filter_sort_meth_string(j, x, value):
     return z[:1]
 
 
-FILTERS_DALVIK_SIM_STRING = {
-    elsim.FILTER_ELEMENT_METH: filter_element_meth_string,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_string,
-    elsim.FILTER_SIM_METH: filter_sim_meth_string,
-    elsim.FILTER_SORT_METH: filter_sort_meth_string,
-    elsim.FILTER_SORT_VALUE: 0.8,
-    elsim.FILTER_SKIPPED_METH: FilterNone(),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
-}
-
-FILTERS_DALVIK_BB = {
-    elsim.FILTER_ELEMENT_METH: filter_element_bb_basic,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_bb_basic,
-    elsim.FILTER_SIM_METH: filter_sim_bb_basic,
-    elsim.FILTER_SORT_METH: filter_sort_bb_basic,
-    elsim.FILTER_SORT_VALUE: 0.8,
-    elsim.FILTER_SKIPPED_METH: FilterNone(),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
-}
-
-
 class ProxyDalvik:
+    """
+    A simple proxy which uses the methods for comparison
+    """
     def __init__(self, vm, vmx):
         """
         :param androguard.core.bytecodes.dvm.DalvikVMFormat vm:
@@ -635,42 +636,43 @@ class ProxyDalvik:
         self.vm = vm
         self.vmx = vmx
 
-    def get_elements(self):
-        for i in self.vm.get_methods():
-            yield i
+    def __iter__(self):
+        yield from self.vm.get_methods()
 
 
-class ProxyDalvikMethod(object):
+class ProxyDalvikMethod:
+    """A Proxy for BasicBlocks"""
     def __init__(self, el):
         self.el = el
 
-    def get_elements(self):
-        for j in self.el.mx.basic_blocks.get():
-            yield j
+    def __iter__(self):
+        yield from self.el.mx.basic_blocks.get()
 
 
-class ProxyDalvikStringMultiple(object):
+class ProxyDalvikStringMultiple:
     def __init__(self, vm, vmx):
         self.vm = vm
         self.vmx = vmx
 
-    def get_elements(self):
+    def __iter__(self):
+        # FIXME: no more tainted_variables
         for i in self.vmx.get_tainted_variables().get_strings():
             yield i[1]
             # for i in self.vm.get_strings():
             #    yield i
 
 
-class ProxyDalvikStringOne(object):
+class ProxyDalvikStringOne:
     def __init__(self, vm, vmx):
         self.vm = vm
         self.vmx = vmx
 
-    def get_elements(self):
+    def __iter__(self):
         yield ''.join(self.vm.get_strings())
 
 
 def LCS(X, Y):
+    """Longest Common Subsequence"""
     m = len(X)
     n = len(Y)
     # An (m+1) times (n+1) matrix
@@ -721,7 +723,7 @@ def toString(bb, hS, rS):
     return S, map_x
 
 
-class DiffInstruction(object):
+class DiffInstruction:
     def __init__(self, bb, instruction):
         self.bb = bb
 
@@ -734,7 +736,7 @@ class DiffInstruction(object):
               self.ins.get_name(), self.ins.show_buff(self.bb.bb.start + self.offset))
 
 
-class DiffBasicBlock(object):
+class DiffBasicBlock:
     def __init__(self, x, y, added, deleted):
         self.basic_block_x = x
         self.basic_block_y = y
@@ -791,22 +793,17 @@ def filter_diff_bb(x, y):
     return DiffBasicBlock(y, x, final_add, final_rm)
 
 
-FILTERS_DALVIK_DIFF_BB = {
-    elsim.DIFF: filter_diff_bb,
-}
-
-
-class ProxyDalvikBasicBlock(object):
+class ProxyDalvikBasicBlock:
     def __init__(self, esim):
         self.esim = esim
 
-    def get_elements(self):
+    def __iter__(self):
         x = elsim.split_elements(self.esim, self.esim.get_similar_elements())
         for i in x:
             yield i, x[i]
 
 
-class DiffDalvikMethod(object):
+class DiffDalvikMethod:
     def __init__(self, m1, m2, els, eld):
         self.m1 = m1
         self.m2 = m2
@@ -837,35 +834,3 @@ class DiffDalvikMethod(object):
 
         print("\n")
 
-
-LIST_EXTERNAL_LIBS = ["Lcom/google/gson",
-                      "Lorg/codehaus",
-                      "Lcom/openfeint",
-                      "Lcom/facebook",
-                      "Lorg/anddev",
-                      "Lcom/badlogic",
-                      "Lcom/rabbit",
-                      "Lme/kiip",
-                      "Lorg/cocos2d",
-                      "Ltwitter4j",
-                      "Lcom/paypal",
-                      "Lcom/electrotank",
-
-                      "Lorg/acra",
-                      "Lorg/apache",
-
-                      "Lcom/google/beintoogson",
-                      "Lcom/beintoo",
-
-                      "Lcom/scoreloop",
-                      "Lcom/MoreGames",
-
-                      # AD not covered
-                      "Lcom/mobfox",
-                      "Lcom/sponsorpay",
-                      "Lde/madvertise",
-                      "Lcom/tremorvideo",
-                      "Lcom/tapjoy",
-                      "Lcom/heyzap",
-
-                      ]

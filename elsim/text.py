@@ -19,20 +19,16 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import hashlib
+import re
 from operator import itemgetter
 
-from elsim import error, warning, debug, set_debug, get_debug
+from elsim import debug, get_debug
 import elsim
 from elsim.similarity import Compress
+from elsim.filters import filter_sim_value_meth
 
 
-def filter_sim_value_meth(v):
-    if v >= 0.2:
-        return 1.0
-    return v
-
-
-class CheckSumText(object):
+class CheckSumText:
     def __init__(self, s1, sim):
         """
         :param s1:
@@ -88,7 +84,7 @@ def filter_sort_meth_basic(j, x, value):
     return z[:1]
 
 
-class Text(object):
+class Text:
     def __init__(self, e, el):
         self.string = el
 
@@ -120,7 +116,7 @@ def filter_element_meth_basic(el, e):
     return Text(e, el)
 
 
-class FilterNone(object):
+class FilterNone:
     def skip(self, e):
         # remove whitespace elements
         if e.string.isspace() == True:
@@ -143,13 +139,32 @@ FILTERS_TEXT = {
 }
 
 
-class ProxyText(object):
-    def __init__(self, buff):
-        self.buff = buff
+class ProxyText:
+    """
+    ProxyText can be used as a proxy for Elsim which handles
+    Text by splitting it at any sentence into words.
+    The sentences are then the iterable and are getting compared.
 
-    def get_elements(self):
-        buff = self.buff.replace(b"\n", b" ")
-        # multi split elements: ".", ",", ":"
-        import re
-        for i in re.split(b'; |, |-|\.|\?|:', buff):
-            yield i
+    In order to compare a text, bytes must be supplied.
+    So either encode the text yourself, or use the encoding parameter
+    to let the Proxy encode the text.
+    """
+    def __init__(self, buff, encoding=None):
+        """
+        :param buff: the bytes of the text, or str if encoding is given
+        :param str encoding: name of the encoding to encode str to bytes
+        """
+        if isinstance(buff, bytes):
+            self.buff = buff
+        elif encoding is not None:
+            self.buff = buff.encode(encoding)
+        else:
+            raise ValueError("You must specify an encoding or encode the string to bytes yourself!")
+
+    def __iter__(self):
+        # split elements at the following characters: [;,-.?:!]
+        # newlines are treated like whitespaces
+        # TODO: actually there are probably better methods of detecting sentences...
+        # TODO: what about other characters which we might want to replace to whitespace like tabs?
+        yield from re.split(br'; |, |-|\.|\?|:|!', self.buff.replace(b"\n", b" "))
+

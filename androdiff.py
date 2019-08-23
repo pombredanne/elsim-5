@@ -101,7 +101,7 @@ def main(options, arguments):
         sys.stdout.flush()
 
         threshold = None
-        if options.threshold != None:
+        if options.threshold is not None:
             threshold = float(options.threshold)
 
         FS = FILTERS_DALVIK_SIM

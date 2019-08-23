@@ -112,12 +112,7 @@ def check_one_file(a,
         return
     dx2 = analysis.Analysis(d2)
 
-    el = elsim.Elsim(ProxyDalvik(d1, dx1),
-                     ProxyDalvik(d2, dx2),
-                     FS,
-                     threshold,
-                     options.compressor,
-                     libnative=library)
+    el = elsim.Elsim(ProxyDalvik(d1, dx1), ProxyDalvik(d2, dx2), FS, threshold, options.compressor)
     el.show()
     print("\t--> methods: %f%% of similarities" % el.get_similarity_value(new))
 

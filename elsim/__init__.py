@@ -154,14 +154,14 @@ class Elsim:
     * FILTER_SORT_METH
     * FILTER_SORT_VALUE
     """
-    def __init__(self, e1, e2, F, threshold=None, C="SNAPPY"):
+    def __init__(self, e1, e2, F, threshold=None, compressor=None):
         """
         
         :param Proxy e1: the first element to compare
         :param Proxy e2: the second element to compare
         :param dict F: Some Filter dictionary
         :param float threshold: threshold for filtering similar items, which overwrites the one in the Filter
-        :param str C: compression method name
+        :param str compressor: compression method name, or None to use the default one
         """
         self.e1 = e1
         self.e2 = e2
@@ -175,7 +175,10 @@ class Elsim:
 
         self.sim = SIMILARITY()
 
-        self.compressor = Compress.by_name(C.upper())
+        if compressor is not None:
+            self.compressor = Compress.by_name(compressor.upper())
+        else:
+            self.compressor = Compress.SNAPPY
         self.sim.set_compress_type(self.compressor)
 
         # Initialize the filters
