@@ -191,6 +191,9 @@ class Elsim:
     - Perform the "NCD" between each element of A and B
 
     - S: "Sort" all similarities elements by using a threshold
+      This returns the most similar element per element or
+      no element if the threshold is not reached (i.e. we think the items are
+      not similar at all).
 
     - N,D: Get all new/deleted elements if they are not present in one of
       the previous sets
@@ -386,6 +389,11 @@ class Elsim:
                 self.filters[HASHSUM_SIMILAR_ELEMENTS].append(hash(j))
 
     def _init_sort_elements(self):
+        """
+        Now we threshold the similarity value and get the most similar item
+        If there is no similar item with respect to the threhsold,
+        we think this item got deleted.
+        """
         deleted_elements = []
         for j in self.filters[SIMILAR_ELEMENTS]:
             sort_h = self.filters[BASE][FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.threshold)
@@ -402,6 +410,12 @@ class Elsim:
         return y in self.filters[SIMILARITY_SORT_ELEMENTS][x]
 
     def _init_new_elements(self):
+        """
+        As we have now identified the deleted items,
+        We can identify new items.
+        We regard all items as new, if they are in the second iterable
+        but do not have any connection from the first.
+        """
         # Check if some elements in the second file are totally new !
         for j in self.filters[ELEMENTS][self.e2]:
             # new elements can't be in similar elements
@@ -576,7 +590,6 @@ class Eldiff(object):
             self.filters[DELETED_ELEMENTS][i].extend(x.get_deleted_elements())
 
             self.filters[LINK_ELEMENTS][j] = i
-            #self.filters[ LINK_ELEMENTS ][ i ] = j
 
     def show(self):
         for bb in self.filters[LINK_ELEMENTS]:
