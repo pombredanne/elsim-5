@@ -23,7 +23,7 @@ import mmh3
 from elsim import debug, get_debug
 import elsim
 from elsim.similarity import Compress
-from elsim.filters import FilterEmpty
+from elsim.filters import FilterEmpty, filter_sort_meth_basic
 
 
 class CheckSumText:
@@ -57,24 +57,6 @@ class CheckSumText:
 
     def get_buff(self):
         return self.buff
-
-
-def filter_sort_meth_basic(j, x, value):
-    """
-
-    :param float value: the threshold which must be reached to be "interesting"
-    """
-    # Sort all items by the value, which is the distance
-    z = sorted(x.items(), key=itemgetter(1))
-
-    if get_debug():
-        for i in z:
-            debug("\t %s %f" % (i[0].get_info(), i[1]))
-
-    if z[:1][0][1] > value:
-        return []
-
-    return z[:1]
 
 
 class Text:

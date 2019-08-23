@@ -48,16 +48,29 @@ def debug(x):
     log_elsim.debug(x)
 
 
+# The following constants are used in the Filter dict
+# They require certain objects or functions...
+# The process is explained here
+
 # Object to store element information in
+# This will be applied to every element in the iterable.
+# from an element, we construct an Element...
 FILTER_ELEMENT_METH = "FILTER_ELEMENT_METH"
 # Object to checksum an element
+# Next this Object is created, which might be used
+# to normalized the content of the Element
+# In general it is used to transform the content.
+# All Checksums and Similarities are calculated on this.
+# We call this now Checksum but it is actually contained in the Element itself
 FILTER_CHECKSUM_METH = "FILTER_CHECKSUM_METH"
 # function to calculate the similarity between two elements
-# Arguments: Similarity(), Element1, Element2
+# Arguments: Similarity(), Element_1, Element_2
 FILTER_SIM_METH = "FILTER_SIM_METH"
-# function to sort all similar elements
+# function to sort all similar elements using threshold
 FILTER_SORT_METH = "FILTER_SORT_METH"
 # object to skip elements
+# this object has to implement a `skip` function
+# and should return True if the given element shall be skipped.
 FILTER_SKIPPED_METH = "FILTER_SKIPPED_METH"
 
 BASE = "base"
@@ -69,7 +82,6 @@ NEW_ELEMENTS = "newelements"
 HASHSUM_NEW_ELEMENTS = "hash_new_elements"
 DELETED_ELEMENTS = "deletedelements"
 IDENTICAL_ELEMENTS = "identicalelements"
-INTERNAL_IDENTICAL_ELEMENTS = "internal identical elements"
 SKIPPED_ELEMENTS = "skippedelements"
 SIMILARITY_ELEMENTS = "similarity_elements"
 SIMILARITY_SORT_ELEMENTS = "similarity_sort_elements"
@@ -305,12 +317,13 @@ class Elsim:
         self.__init_index_elements(self.e2)
 
     def __init_index_elements(self, iterable):
+        # TODO: We can probably spare some of those dicts...
         self.set_els[iterable] = set()
-        self.ref_set_els[iterable] = {}
-        self.ref_set_ident[iterable] = {}
+        self.ref_set_els[iterable] = dict()
+        self.ref_set_ident[iterable] = dict()
 
         for element in iterable:
-            # Generate the elements for storing the hashes in
+            # Generate the Elements for storing the hashes in
             # This element must have the methods get_info, set_checksum, __hash__
             e = self.filters[BASE][FILTER_ELEMENT_METH](element, iterable)
 
@@ -321,6 +334,8 @@ class Elsim:
 
             # Add the element to the list of elements for the given Iterable
             self.filters[ELEMENTS][iterable].append(e)
+            # Create the Checksum object, which might transform the content
+            # and is used to calculate distances and checksum.
             fm = self.filters[BASE][FILTER_CHECKSUM_METH](e, self.sim)
             e.set_checksum(fm)
 
@@ -336,25 +351,39 @@ class Elsim:
             self.ref_set_ident[iterable][element_hash].append(e)
 
     def _init_similarity(self):
-        intersection_elements = self.set_els[self.e2].intersection(self.set_els[self.e1])
-        difference_elements = self.set_els[self.e2].difference(intersection_elements)
+        """
+        Calculate the similarites between all elements
 
+        As a first step, we identify all identical elements.
+        Then we iterate over the leftovers and calculate the similarity.
+        """
+        # Get all elements which are in common -> these are identical
+        intersection_elements = self.set_els[self.e2].intersection(self.set_els[self.e1])
+        # Get all elements which are different
+        difference_elements = self.set_els[self.e2].difference(intersection_elements)
+        # We remove the set of intersected elements from e1
+        to_test = self.set_els[self.e1].difference(intersection_elements)
+
+        # Update the IDENTICAL_ELEMENTS with the actual Elements
         self.filters[IDENTICAL_ELEMENTS].update([self.ref_set_els[self.e1][i] for i in intersection_elements])
+
         available_e2_elements = [self.ref_set_els[self.e2][i] for i in difference_elements]
 
         # Check if some elements in the first file has been modified
-        for j in self.filters[ELEMENTS][self.e1]:
+        # We compare all different elements from e1 with all different elements from e2
+        # Hence, we create a similarity matrix with size n * m
+        # where n is the number of different items in e1
+        # and m is the number of different items in e2
+        for j in [self.ref_set_els[self.e1][i] for i in to_test]:
             self.filters[SIMILARITY_ELEMENTS][j] = dict()
+            for k in available_e2_elements:
+                # Calculate and store the similarity between j and k
+                self.filters[SIMILARITY_ELEMENTS][j][k] = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
 
-            if hash(j) not in self.filters[HASHSUM][self.e2]:
-                for k in available_e2_elements:
-                    # Calculate and store the similarity between j and k
-                    self.filters[SIMILARITY_ELEMENTS][j][k] = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
-
-                    # Store, that j has similar elements
-                    if hash(j) not in self.filters[HASHSUM_SIMILAR_ELEMENTS]:
-                        self.filters[SIMILAR_ELEMENTS].append(j)
-                        self.filters[HASHSUM_SIMILAR_ELEMENTS].append(hash(j))
+            # Store, that j has similar elements
+            if hash(j) not in self.filters[HASHSUM_SIMILAR_ELEMENTS]:
+                self.filters[SIMILAR_ELEMENTS].append(j)
+                self.filters[HASHSUM_SIMILAR_ELEMENTS].append(hash(j))
 
     def _init_sort_elements(self):
         deleted_elements = []
@@ -392,39 +421,39 @@ class Elsim:
                             self.filters[HASHSUM_NEW_ELEMENTS].append(hash(j))
 
     def get_similar_elements(self):
-        """ Return the similar elements
-            @rtype : a list of elements
+        """
+        Return the similar elements
         """
         return self.get_elem(SIMILAR_ELEMENTS)
 
     def get_new_elements(self):
-        """ Return the new elements
-            @rtype : a list of elements
+        """
+        Return the new elements
         """
         return self.get_elem(NEW_ELEMENTS)
 
     def get_deleted_elements(self):
-        """ Return the deleted elements
-            @rtype : a list of elements
+        """
+        Return the deleted elements
         """
         return self.get_elem(DELETED_ELEMENTS)
 
-    def get_internal_identical_elements(self, ce):
-        """ Return the internal identical elements
-            @rtype : a list of elements
-        """
-        return self.get_elem(INTERNAL_IDENTICAL_ELEMENTS)
-
     def get_identical_elements(self):
-        """ Return the identical elements
-            @rtype : a list of elements
+        """
+        Return the identical elements
         """
         return self.get_elem(IDENTICAL_ELEMENTS)
 
     def get_skipped_elements(self):
+        """
+        Get a list if skipped Elements
+        """
         return self.get_elem(SKIPPED_ELEMENTS)
 
     def get_elem(self, attr):
+        """
+        Wrapper to get elements from the list with name attr
+        """
         return [x for x in self.filters[attr]]
 
     def show_element(self, i, details=True):

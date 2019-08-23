@@ -27,6 +27,7 @@ from androguard.core.bytecodes import dvm
 
 from elsim import debug, get_debug
 import elsim
+from elsim.filters import filter_sort_meth_basic
 
 
 # FIXME: what was this?!
@@ -151,19 +152,6 @@ def filter_sim_meth_old(m1, m2, sim):
 def filter_sim_meth_basic(sim, m1, m2):
     ncd1 = sim.ncd(m1.checksum.get_signature(), m2.checksum.get_signature())
     return ncd1
-
-
-def filter_sort_meth_basic(j, x, value):
-    z = sorted(x.items(), key=itemgetter(1))
-
-    if get_debug():
-        for i in z:
-            debug("\t %s %f" % (i[0].get_info(), i[1]))
-
-    if z[:1][0][1] > value:
-        return []
-
-    return z[:1]
 
 
 def filter_sim_bb_basic(sim, bb1, bb2):

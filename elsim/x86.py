@@ -23,7 +23,7 @@ from operator import itemgetter
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
-from elsim.filters import FilterNone
+from elsim.filters import FilterNone, filter_sort_meth_basic
 
 
 class CheckSumFunc(object):
@@ -67,19 +67,6 @@ def filter_checksum_meth_basic(f, sim):
 def filter_sim_meth_basic(sim, m1, m2):
     ncd2 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd2
-
-
-def filter_sort_meth_basic(j, x, value):
-    z = sorted(x.items(), key=itemgetter(1))
-
-    if get_debug():
-        for i in z:
-            debug("\t %s %f" % (i[0].get_info(), i[1]))
-
-    if z[:1][0][1] > value:
-        return []
-
-    return z[:1]
 
 
 class Instruction(object):
