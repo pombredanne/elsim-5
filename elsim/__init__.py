@@ -48,17 +48,17 @@ def debug(x):
     log_elsim.debug(x)
 
 
+# Object to store element information in
 FILTER_ELEMENT_METH = "FILTER_ELEMENT_METH"
-# function to checksum an element
+# Object to checksum an element
 FILTER_CHECKSUM_METH = "FILTER_CHECKSUM_METH"
 # function to calculate the similarity between two elements
+# Arguments: Similarity(), Element1, Element2
 FILTER_SIM_METH = "FILTER_SIM_METH"
 # function to sort all similar elements
 FILTER_SORT_METH = "FILTER_SORT_METH"
 # object to skip elements
 FILTER_SKIPPED_METH = "FILTER_SKIPPED_METH"
-# function to modify values of the similarity
-FILTER_SIM_VALUE_METH = "FILTER_SIM_VALUE_METH"
 
 BASE = "base"
 ELEMENTS = "elements"
@@ -139,8 +139,6 @@ class Elsim:
     A Filter is basically a dictionary with some pre-defined keys, which has as value
     some function pointers.
     Each function is called for specific tasks and types of the input.
-    Such a function must return and object which has the following properties:
-    :code:`set_checksum`, :code:`getsha256`.
 
     The filter is required to have the following keys:
 
@@ -148,7 +146,6 @@ class Elsim:
     * FILTER_SKIPPED_METH
     * FILTER_CHECKSUM_METH
     * FILTER_SIM_METH
-    * FILTER_SIM_VALUE_METH
     * FILTER_SORT_METH
 
     A reasonable threshold might be a different per method.
@@ -159,8 +156,80 @@ class Elsim:
     * DEX: 0.4
     * DEX Strings: 0.8
     * DEX BasicBlocks: 0.8
+
+    The whole process of comparing the two iterables can be described as such:
+
+    - input: A:set(), B:set()
+      where A and B are sets of elements
+
+    - output: I:set(), S:set(), N:set(), D:set(), Sk:set()
+      where I: identical elements, S: similar elements, N: new elements,
+      D: deleted elements, Sk: skipped elements
+
+    - Sk: Skipped elements by using a "filtering" function (helpful if we
+      wish to skip some elements from a set (small size, known element from
+      a library, etc.)
+
+    - Identify internal identical elements in each set
+
+    - I: Identify "identical" elements by the intersection of A and B
+
+    - Get all others elements by removing identical elements
+
+    - Perform the "NCD" between each element of A and B
+
+    - S: "Sort" all similarities elements by using a threshold
+
+    - N,D: Get all new/deleted elements if they are not present in one of
+      the previous sets
+
+    The following diagram describes this algorithm:
+
+
+    .. code-block:: none
+
+        |--A--|                 |--B--|
+        |  A1 |                 |  B1 |
+        |  A2 |                 |  B2 |
+        |  A3 |                 |  B3 |
+        |--An-|                 |--Bn-|
+           |      |---------|      |
+           |- --->|FILTERING|<-----|
+                  |---------|
+                     |   |
+                     |   |--------->|Sk|
+                     |
+                     |      |---------|
+                     |----->|IDENTICAL|------>|I|
+                            |---------|
+                                 |
+                                 |
+                                 |     |---|---use-->|Kolmogorov|
+                                 |---->|NCD|
+                                       |---|
+                                         |
+                                         |
+                                         |
+                                         |         |---------|-->|Threshold|
+                                         |-------->| SORTING |
+                                                   |---------|
+                                                        |
+                                                        |
+                                                       /|\
+                                                      / | \
+                                                     /  |  \
+                                                    /   |   \
+                                                   /    |    \
+                                                  /     |     \
+                                 |N|<------------/      |      \-------->|D|
+                                                        |
+                                                        |---->|S|
+
+
+    Moreover we can calculate a similarity "score" using the number of
+    identical elements and the value of the similar elements.
     """
-    def __init__(self, e1, e2, F, threshold=0.8, compressor=None):
+    def __init__(self, e1, e2, F, threshold=0.8, compressor=None, similarity_threshold=0.2):
         """
         
         :param Proxy e1: the first element to compare
@@ -168,6 +237,7 @@ class Elsim:
         :param dict F: Some Filter dictionary
         :param float threshold: value which used in the sort method to eliminate not interesting comparisons
         :param str compressor: compression method name, or None to use the default one
+        :param float similarity_threshold: value to threshold similarity values with
         """
         if F is None:
             raise ValueError("A valid filter dict is required!")
@@ -175,6 +245,10 @@ class Elsim:
         if not (0 <= threshold <= 1):
             raise ValueError("threshold must be a number between 0 and 1!")
         self.threshold = threshold
+
+        if not (0 <= similarity_threshold <= 1):
+            raise ValueError("similarity_threshold must be a number between 0 and 1!")
+        self.similarity_threshold = similarity_threshold
 
         self.e1 = e1
         self.e2 = e2
@@ -237,7 +311,7 @@ class Elsim:
 
         for element in iterable:
             # Generate the elements for storing the hashes in
-            # This element must have the methods get_info, set_checksum, getsha256
+            # This element must have the methods get_info, set_checksum, __hash__
             e = self.filters[BASE][FILTER_ELEMENT_METH](element, iterable)
 
             # Check if the element shall be skipped
@@ -251,15 +325,15 @@ class Elsim:
             e.set_checksum(fm)
 
             # Hash the content and add the hash to our list of known hashes
-            sha256 = e.getsha256()
-            self.filters[HASHSUM][iterable].append(sha256)
+            element_hash = hash(e)
+            self.filters[HASHSUM][iterable].append(element_hash)
 
-            if sha256 not in self.set_els[iterable]:
-                self.set_els[iterable].add(sha256)
-                self.ref_set_els[iterable][sha256] = e
+            if element_hash not in self.set_els[iterable]:
+                self.set_els[iterable].add(element_hash)
+                self.ref_set_els[iterable][element_hash] = e
 
-                self.ref_set_ident[iterable][sha256] = []
-            self.ref_set_ident[iterable][sha256].append(e)
+                self.ref_set_ident[iterable][element_hash] = []
+            self.ref_set_ident[iterable][element_hash].append(e)
 
     def _init_similarity(self):
         intersection_elements = self.set_els[self.e2].intersection(self.set_els[self.e1])
@@ -272,16 +346,15 @@ class Elsim:
         for j in self.filters[ELEMENTS][self.e1]:
             self.filters[SIMILARITY_ELEMENTS][j] = dict()
 
-            #debug("SIM FOR %s" % (j.get_info()))
-            if j.getsha256() not in self.filters[HASHSUM][self.e2]:
-                #eln = ElsimNeighbors( j, available_e2_elements )
-                # for k in eln.cmp_elements():
+            if hash(j) not in self.filters[HASHSUM][self.e2]:
                 for k in available_e2_elements:
-                    #debug("%s" % k.get_info())
+                    # Calculate and store the similarity between j and k
                     self.filters[SIMILARITY_ELEMENTS][j][k] = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
-                    if j.getsha256() not in self.filters[HASHSUM_SIMILAR_ELEMENTS]:
+
+                    # Store, that j has similar elements
+                    if hash(j) not in self.filters[HASHSUM_SIMILAR_ELEMENTS]:
                         self.filters[SIMILAR_ELEMENTS].append(j)
-                        self.filters[HASHSUM_SIMILAR_ELEMENTS].append(j.getsha256())
+                        self.filters[HASHSUM_SIMILAR_ELEMENTS].append(hash(j))
 
     def _init_sort_elements(self):
         deleted_elements = []
@@ -305,7 +378,7 @@ class Elsim:
             # new elements can't be in similar elements
             if j not in self.filters[SIMILAR_ELEMENTS]:
                 # new elements hashes can't be in first file
-                if j.getsha256() not in self.filters[HASHSUM][self.e1]:
+                if hash(j) not in self.filters[HASHSUM][self.e1]:
                     ok = True
                     # new elements can't be compared to another one
                     for diff_element in self.filters[SIMILAR_ELEMENTS]:
@@ -314,9 +387,9 @@ class Elsim:
                             break
 
                     if ok:
-                        if j.getsha256() not in self.filters[HASHSUM_NEW_ELEMENTS]:
+                        if hash(j) not in self.filters[HASHSUM_NEW_ELEMENTS]:
                             self.filters[NEW_ELEMENTS].add(j)
-                            self.filters[HASHSUM_NEW_ELEMENTS].append(j.getsha256())
+                            self.filters[HASHSUM_NEW_ELEMENTS].append(hash(j))
 
     def get_similar_elements(self):
         """ Return the similar elements
@@ -360,15 +433,13 @@ class Elsim:
         if not details:
             return
 
-        if i.getsha256() is None:
-            pass
-        elif i.getsha256() in self.ref_set_els[self.e2]:
-            if len(self.ref_set_ident[self.e2][i.getsha256()]) > 1:
-                for ident in self.ref_set_ident[self.e2][i.getsha256()]:
+        if hash(i) in self.ref_set_els[self.e2]:
+            if len(self.ref_set_ident[self.e2][hash(i)]) > 1:
+                for ident in self.ref_set_ident[self.e2][hash(i)]:
                     print("\t\t-->", ident.get_info())
             else:
                 print(
-                    "\t\t-->", self.ref_set_els[self.e2][i.getsha256()].get_info())
+                    "\t\t-->", self.ref_set_els[self.e2][hash(i)].get_info())
         else:
             for j in self.filters[SIMILARITY_SORT_ELEMENTS][i]:
                 print("\t\t-->", j.get_info(),
@@ -377,10 +448,8 @@ class Elsim:
     def get_element_info(self, i):
         l = []
 
-        if i.getsha256() == None:
-            pass
-        elif i.getsha256() in self.ref_set_els[self.e2]:
-            l.append([i, self.ref_set_els[self.e2][i.getsha256()]])
+        if hash(i) in self.ref_set_els[self.e2]:
+            l.append([i, self.ref_set_els[self.e2][hash(i)]])
         else:
             for j in self.filters[SIMILARITY_SORT_ELEMENTS][i]:
                 l.append([i, j, self.filters[SIMILARITY_ELEMENTS][i][j]])
@@ -389,14 +458,20 @@ class Elsim:
     def get_associated_element(self, i):
         return list(self.filters[SIMILARITY_SORT_ELEMENTS][i])[0]
 
-    def get_similarity_value(self, new=True):
+    def _similarity_threshold(self, value):
+        # This basically sets the distance to maximum if a certain value is reached
+        # TODO: I do not fully understand the rationale behind this...
+        return 1.0 if value >= self.similarity_threshold else value
+
+    def get_similarity_value(self, new=True, deleted=True):
         """
         Returns a score in percent of how similar the two files are
 
         The similarity value is calculated as the average similarity
-        between all elements. (?)
+        between all filtered elements.
 
-        :param bool new: ???
+        :param bool new: Should new elements regarded as beeing dissimilar
+        :param bool deleted: Should deleted elements regarded as beeing dissimilar
         """
         values = []
 
@@ -404,20 +479,21 @@ class Elsim:
             k = self.get_associated_element(j)
             value = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
             # filter value
-            value = self.filters[BASE][FILTER_SIM_VALUE_METH](value)
+            values.append(self._similarity_threshold(value))
 
-            values.append(value)
+        # Identical Elements have a distance of 0
+        values.extend([self._similarity_threshold(0.0) for i in self.filters[IDENTICAL_ELEMENTS]])
 
-        values.extend([self.filters[BASE][FILTER_SIM_VALUE_METH](0.0)
-                       for i in self.filters[IDENTICAL_ELEMENTS]])
         if new:
-            values.extend([self.filters[BASE][FILTER_SIM_VALUE_METH](1.0)
-                           for i in self.filters[NEW_ELEMENTS]])
-        else:
-            values.extend([self.filters[BASE][FILTER_SIM_VALUE_METH](1.0)
-                           for i in self.filters[DELETED_ELEMENTS]])
+            # New Elements have a distance of 1
+            values.extend([self._similarity_threshold(1.0) for i in self.filters[NEW_ELEMENTS]])
+
+        if deleted:
+            # Deleted Elements have a distance of 1
+            values.extend([self._similarity_threshold(1.0) for i in self.filters[DELETED_ELEMENTS]])
 
         # So actually we are calculating the NCS here from all the NCD values...
+        # As NCS = 1 - NCD, we just need to calculate that.
         # Then we take the arithmetic mean and return it as percentage
         return sum([1.0 - i for i in values]) / max(len(values), 1) * 100
 

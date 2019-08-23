@@ -19,7 +19,7 @@ This module encapsultes dalvik code for the use with elsim
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
-import hashlib
+import mmh3
 import re
 from operator import itemgetter
 
@@ -27,7 +27,6 @@ from androguard.core.bytecodes import dvm
 
 from elsim import debug, get_debug
 import elsim
-from elsim.filters import filter_sim_value_meth
 
 
 # FIXME: what was this?!
@@ -69,7 +68,6 @@ FILTERS_DALVIK_SIM = {
     elsim.FILTER_SIM_METH: filter_sim_meth_basic,
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterSkip(None, None),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
 
 FILTERS_DALVIK_SIM_STRING = {
@@ -78,7 +76,6 @@ FILTERS_DALVIK_SIM_STRING = {
     elsim.FILTER_SIM_METH: filter_sim_meth_string,
     elsim.FILTER_SORT_METH: filter_sort_meth_string,
     elsim.FILTER_SKIPPED_METH: FilterNone(),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
 
 FILTERS_DALVIK_BB = {
@@ -87,7 +84,6 @@ FILTERS_DALVIK_BB = {
     elsim.FILTER_SIM_METH: filter_sim_bb_basic,
     elsim.FILTER_SORT_METH: filter_sort_bb_basic,
     elsim.FILTER_SKIPPED_METH: FilterNone(),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
 
 FILTERS_DALVIK_DIFF_BB = {
@@ -183,7 +179,7 @@ class CheckSumBB:
             self.buff += dvm.clean_name_instruction(i)
             self.buff += dvm.static_operand_instruction(i)
 
-        self.hash = hashlib.sha256(self.buff).hexdigest()
+        self.hash = mmh3.hash128(self.buff)
 
     def get_buff(self):
         return self.buff
@@ -346,7 +342,7 @@ class Method:
         self.sort_h = []
 
         self.hash = {}
-        self.sha256 = None
+        self.__hash = None
 
     def get_info(self):
         return "%s %s %s %d" % (self.m.get_class_name(), self.m.get_name(), self.m.get_descriptor(), self.m.get_length())
@@ -355,8 +351,11 @@ class Method:
         return self.m.get_length()
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256(fm.get_buff().encode('UTF-8')).hexdigest()
+        self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
+
+    def __hash__(self):
+        return self.__hash
 
     def diff(self, func_sim_bb, func_diff_ins):
         if self.sort_h == []:
@@ -533,13 +532,14 @@ def filter_element_meth_basic(el, e):
 class BasicBlock:
     def __init__(self, bb):
         self.bb = bb
+        self.__hash = None
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
+        self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def getsha256(self):
-        return self.sha256
+    def __hash__(self):
+        return self.__hash
 
     def get_info(self):
         return self.bb.name
@@ -568,17 +568,18 @@ def filter_sort_bb_basic(j, x, value):
 class StringVM:
     def __init__(self, el):
         self.el = el
+        self.__hash = None
 
     def set_checksum(self, fm):
         # FIXME: we can use the MUTF8 strings here
-        self.sha256 = hashlib.sha256(fm.get_buff().encode('UTF-8')).hexdigest()
+        self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
     def get_length(self):
         return len(self.el)
 
-    def getsha256(self):
-        return self.sha256
+    def __hash__(self):
+        return self.__hash
 
     def get_info(self):
         return len(self.el), repr(self.el)

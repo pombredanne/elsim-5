@@ -18,12 +18,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
-import hashlib
+import mmh3
 from operator import itemgetter
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
-from elsim.filters import filter_sim_value_meth, FilterNone
+from elsim.filters import FilterNone
 
 
 class CheckSumFunc(object):
@@ -93,6 +93,7 @@ class Instruction(object):
 class Function(object):
     def __init__(self, e, el):
         self.function = el
+        self.__hash = None
 
     def get_instructions(self):
         for i in self.function.get_instructions():
@@ -105,11 +106,11 @@ class Function(object):
         return "%s" % (self.function.name)
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
+        self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def getsha256(self):
-        return self.sha256
+    def __hash__(self):
+        return self.__hash
 
 
 def filter_element_meth_basic(el, e):
@@ -122,7 +123,6 @@ FILTERS_X86 = {
     elsim.FILTER_SIM_METH: filter_sim_meth_basic,
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterNone,
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
 
 

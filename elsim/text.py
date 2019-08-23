@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # This file is part of Elsim
 #
 # Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
@@ -18,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
-import hashlib
 import re
 from operator import itemgetter
+import mmh3
 
 from elsim import debug, get_debug
 import elsim
 from elsim.similarity import Compress
-from elsim.filters import filter_sim_value_meth
+from elsim.filters import FilterEmpty
 
 
 class CheckSumText:
@@ -61,8 +59,12 @@ class CheckSumText:
         return self.buff
 
 
-
 def filter_sort_meth_basic(j, x, value):
+    """
+
+    :param float value: the threshold which must be reached to be "interesting"
+    """
+    # Sort all items by the value, which is the distance
     z = sorted(x.items(), key=itemgetter(1))
 
     if get_debug():
@@ -83,32 +85,23 @@ class Text:
     """
     def __init__(self, element):
         self.string = element.strip(b' ')
-        self.sha256 = None
+        self.__hash = None
 
     def get_info(self):
         return "%d '%s'" % (len(self.string), repr(self.string))
 
     def set_checksum(self, fm):
-        self.sha256 = hashlib.sha256(fm.get_buff()).hexdigest()
+        """
+        :param CheckSumText fm:
+        """
+        self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def getsha256(self):
-        return self.sha256
+    def __hash__(self):
+        return self.__hash
 
     def __repr__(self):
         return self.get_info()
-
-
-class FilterNone:
-    """
-    This filter removes all empty or only whitespace elements
-    """
-    @staticmethod
-    def skip(element):
-        if element in (b'', b' '):
-            return True
-
-        return False
 
 
 FILTERS_TEXT = {
@@ -116,8 +109,7 @@ FILTERS_TEXT = {
     elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumText(element, sim),
     elsim.FILTER_SIM_METH: lambda sim, element1, element2: sim.ncd(element1.checksum.get_buff(), element2.checksum.get_buff()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
-    elsim.FILTER_SKIPPED_METH: FilterNone(),
-    elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
+    elsim.FILTER_SKIPPED_METH: FilterEmpty,
 }
 
 

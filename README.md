@@ -20,6 +20,15 @@ For running elsim, those packages should be sufficant:
 
 `apt install python libstdc++6 libgcc1 lib6 liblzma5 libmuparser2v5 libsnappy1v5 libbz2-1.0 zlib1g`
 
+Changes to original library
+---------------------------
+
+* Replaced SHA256 hashing by Murmurhash3 128bit
+* Removed SimilarityPython
+* Fixed broken entropy calculation
+* Changed Filter System in Elsim
+* Renamed modules and moved them around
+
 Projects used
 -------------
 

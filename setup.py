@@ -10,6 +10,7 @@ setup(
         "androguard>=3.3.5",
         "python-hashes",
         "click",
+        "murmurhash3",
         "numpy",  # only used once, not sure if actual dependency or just some optional stuff
         "sklearn",  # only used once, not sure if actual dependency or just some optional stuff
     ],
