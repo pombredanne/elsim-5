@@ -184,7 +184,7 @@ class Elsim:
             BASE: F,
             ELEMENTS: dict(),
             HASHSUM: dict(),
-            IDENTICAL_ELEMENTS: dict(),
+            IDENTICAL_ELEMENTS: set(),
             SIMILAR_ELEMENTS: [],
             HASHSUM_SIMILAR_ELEMENTS: [],
             NEW_ELEMENTS: set(),
