@@ -18,13 +18,19 @@
 import click
 from elsim.text import ProxyText, FILTERS_TEXT
 from elsim import Elsim, ELSIM_VERSION
+from elsim.similarity import Compress
 
 
 @click.command()
 @click.version_option(ELSIM_VERSION)
 @click.option("-d", "--display", is_flag=True, help="display detailed information about the changes")
+@click.option("-c", "--compressor", default="SNAPPY", type=click.Choice([x.name for x in Compress]),
+        show_default=True,
+        show_choices=True,
+        help="Set the compression method")
+@click.option("-t", "--threshold", type=click.FloatRange(0, 1), help="Threshold for similarity measure, defines when two items are similar, overwrites the default")
 @click.argument('comp', nargs=2)
-def cli(display, comp):
+def cli(display, compressor, threshold, comp):
     """
     Run a similarity measure on two text files
     """
@@ -33,9 +39,8 @@ def cli(display, comp):
     with open(comp[1], 'rb') as fp:
         b2 = fp.read()
 
-    el = Elsim(ProxyText(b1), ProxyText(b2), FILTERS_TEXT)
+    el = Elsim(ProxyText(b1), ProxyText(b2), FILTERS_TEXT, threshold=threshold, compressor=compressor)
     el.show()
-    print(("\t--> sentences: {}% of similarities".format(el.get_similarity_value())))
 
     if display:
         print("SIMILAR sentences:")

@@ -410,12 +410,15 @@ class Elsim:
         """
         Print information about the elements to stdout
         """
+        print("Compression:   {}".format(self.compressor.name))
         print("Elements:")
-        print("\t IDENTICAL:\t", len(self.get_identical_elements()))
-        print("\t SIMILAR: \t", len(self.get_similar_elements()))
-        print("\t NEW:\t\t", len(self.get_new_elements()))
-        print("\t DELETED:\t", len(self.get_deleted_elements()))
-        print("\t SKIPPED:\t", len(self.get_skipped_elements()))
+        print("    IDENTICAL: {}".format(len(self.get_identical_elements())))
+        print("    SIMILAR:   {}".format(len(self.get_similar_elements())))
+        print("    NEW:       {}".format(len(self.get_new_elements())))
+        print("    DELETED:   {}".format(len(self.get_deleted_elements())))
+        print("    SKIPPED:   {}".format(len(self.get_skipped_elements())))
+        print("")
+        print("Similarity:    {: 3.4f}%".format(self.get_similarity_value()))
 
 
 ADDED_ELEMENTS = "added elements"

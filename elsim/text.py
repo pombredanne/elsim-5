@@ -31,7 +31,7 @@ from elsim.filters import filter_sim_value_meth
 class CheckSumText:
     def __init__(self, s1, sim):
         """
-        :param s1:
+        :param bytes s1: the element
         :param elsim.similarity.SIMILARITY sim: the similarity module
         """
         self.s1 = s1
@@ -61,12 +61,8 @@ class CheckSumText:
         return self.buff
 
 
-def filter_checksum_meth_basic(m1, sim):
-    return CheckSumText(m1, sim)
-
-
 def filter_sim_meth_basic(sim, m1, m2):
-    sim.set_compress_type(Compress.XZ)
+    # sim.set_compress_type(Compress.XZ)
     ncd1 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
     return ncd1
 
@@ -112,25 +108,21 @@ class Text:
         return self.get_info()
 
 
-def filter_element_meth_basic(el, e):
-    return Text(e, el)
-
-
 class FilterNone:
-    def skip(self, e):
-        # remove whitespace elements
-        if e.string.isspace() == True:
-            return True
-
-        if len(e.string) == 0:
+    """
+    This filter removes all empty or only whitespace elements
+    """
+    @staticmethod
+    def skip(element):
+        if element in (b'', b' '):
             return True
 
         return False
 
 
 FILTERS_TEXT = {
-    elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
+    elsim.FILTER_ELEMENT_METH: lambda element, iterable: Text(iterable, element),
+    elsim.FILTER_CHECKSUM_METH: lambda m1, sim: CheckSumText(m1, sim),
     elsim.FILTER_SIM_METH: filter_sim_meth_basic,
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SORT_VALUE: 0.6,
