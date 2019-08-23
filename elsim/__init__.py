@@ -118,27 +118,39 @@ def split_elements(el, els):
         e1[i] = el.get_associated_element(i)
     return e1
 
-####
-# elements : entropy raw, hash, signature
-#
-# set elements : hash
-# hash table elements : hash --> element
+
+class Proxy:
+    """
+    This is a basic Proxy class for any iterable.
+    """
+    def __init__(self, iterable):
+        self.iterable = iterable
+
+    def get_elements(self):
+        yield from self.iterable
 
 
 class Elsim:
-    def __init__(self, e1, e2, F, T=None, C=None):
+    """
+    This is the main class to use when calculating similarities between objects.
+    
+    In order to have a universal method for every object you like to compare,
+    you have to implement a Proxy object first.
+    Then, you pass your object into the Proxy and pass the Proxy to Elsim.
+    """
+    def __init__(self, e1, e2, F, T=None, C="SNAPPY"):
         """
         
-        :param e1: ??? the first element to compare ???
-        :param e2: ??? the second element to compare ???
-        :param F: ??? some filter ???
-        :param T: ??? some threshold ???
+        :param Proxy e1: the first element to compare
+        :param Proxy e2: the second element to compare
+        :param F: Some Filter dictionary
+        :param T: threshold ??? for what ???
         :param str C: compression method name
         """
+        # FIXME: instead of using this Proxy here, we could simply use an iterator!
         self.e1 = e1
         self.e2 = e2
         self.F = F
-        self.compressor = Compress.SNAPPY
 
         set_debug()
 
@@ -147,8 +159,7 @@ class Elsim:
 
         self.sim = SIMILARITY()
 
-        if C != None:
-            self.compressor = Compress.by_name(C.upper())
+        self.compressor = Compress.by_name(C.upper())
         self.sim.set_compress_type(self.compressor)
 
         self.filters = {}

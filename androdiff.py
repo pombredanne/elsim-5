@@ -28,9 +28,9 @@ from androguard.core import androconf
 from androguard.util import read
 
 import elsim
-from elsim.elsim_dalvik import ProxyDalvik, FILTERS_DALVIK_SIM, ProxyDalvikMethod, FILTERS_DALVIK_BB
-from elsim.elsim_dalvik import ProxyDalvikBasicBlock, FILTERS_DALVIK_DIFF_BB
-from elsim.elsim_dalvik import DiffDalvikMethod
+from elsim.dalvik import ProxyDalvik, FILTERS_DALVIK_SIM, ProxyDalvikMethod, FILTERS_DALVIK_BB
+from elsim.dalvik import ProxyDalvikBasicBlock, FILTERS_DALVIK_DIFF_BB
+from elsim.dalvik import DiffDalvikMethod
 
 option_0 = {
     'name': ('-i', '--input'),

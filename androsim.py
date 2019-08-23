@@ -18,8 +18,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
 
-from elsim.elsim_dalvik import ProxyDalvikStringMultiple, ProxyDalvikStringOne, FILTERS_DALVIK_SIM_STRING
-from elsim.elsim_dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
+from elsim.dalvik import ProxyDalvikStringMultiple, ProxyDalvikStringOne, FILTERS_DALVIK_SIM_STRING
+from elsim.dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
 import elsim
 import sys
 import os
