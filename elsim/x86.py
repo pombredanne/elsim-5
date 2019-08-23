@@ -23,7 +23,7 @@ from operator import itemgetter
 
 from elsim import error, warning, debug, set_debug, get_debug
 import elsim
-from elsim.filters import filter_sim_value_meth
+from elsim.filters import filter_sim_value_meth, FilterNone
 
 
 class CheckSumFunc(object):
@@ -116,20 +116,12 @@ def filter_element_meth_basic(el, e):
     return Function(e, el)
 
 
-class FilterNone(object):
-    def skip(self, e):
-        # if e.get_nb_instructions() < 2:
-        #    return True
-        return False
-
-
 FILTERS_X86 = {
     elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
     elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
     elsim.FILTER_SIM_METH: filter_sim_meth_basic,
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
-    elsim.FILTER_SORT_VALUE: 0.6,
-    elsim.FILTER_SKIPPED_METH: FilterNone(),
+    elsim.FILTER_SKIPPED_METH: FilterNone,
     elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
 

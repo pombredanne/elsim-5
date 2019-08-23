@@ -68,7 +68,6 @@ FILTERS_DALVIK_SIM = {
     elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
     elsim.FILTER_SIM_METH: filter_sim_meth_basic,
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
-    elsim.FILTER_SORT_VALUE: 0.4,
     elsim.FILTER_SKIPPED_METH: FilterSkip(None, None),
     elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
@@ -78,7 +77,6 @@ FILTERS_DALVIK_SIM_STRING = {
     elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_string,
     elsim.FILTER_SIM_METH: filter_sim_meth_string,
     elsim.FILTER_SORT_METH: filter_sort_meth_string,
-    elsim.FILTER_SORT_VALUE: 0.8,
     elsim.FILTER_SKIPPED_METH: FilterNone(),
     elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }
@@ -88,7 +86,6 @@ FILTERS_DALVIK_BB = {
     elsim.FILTER_CHECKSUM_METH: filter_checksum_bb_basic,
     elsim.FILTER_SIM_METH: filter_sim_bb_basic,
     elsim.FILTER_SORT_METH: filter_sort_bb_basic,
-    elsim.FILTER_SORT_VALUE: 0.8,
     elsim.FILTER_SKIPPED_METH: FilterNone(),
     elsim.FILTER_SIM_VALUE_METH: filter_sim_value_meth,
 }

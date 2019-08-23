@@ -55,8 +55,6 @@ FILTER_CHECKSUM_METH = "FILTER_CHECKSUM_METH"
 FILTER_SIM_METH = "FILTER_SIM_METH"
 # function to sort all similar elements
 FILTER_SORT_METH = "FILTER_SORT_METH"
-# value which used in the sort method to eliminate not interesting comparisons
-FILTER_SORT_VALUE = "FILTER_SORT_VALUE"
 # object to skip elements
 FILTER_SKIPPED_METH = "FILTER_SKIPPED_METH"
 # function to modify values of the similarity
@@ -152,26 +150,34 @@ class Elsim:
     * FILTER_SIM_METH
     * FILTER_SIM_VALUE_METH
     * FILTER_SORT_METH
-    * FILTER_SORT_VALUE
+
+    A reasonable threshold might be a different per method.
+    The following thresholds were used in the past:
+
+    * Text diffing: 0.6
+    * x86: 0.6
+    * DEX: 0.4
+    * DEX Strings: 0.8
+    * DEX BasicBlocks: 0.8
     """
-    def __init__(self, e1, e2, F, threshold=None, compressor=None):
+    def __init__(self, e1, e2, F, threshold=0.8, compressor=None):
         """
         
         :param Proxy e1: the first element to compare
         :param Proxy e2: the second element to compare
         :param dict F: Some Filter dictionary
-        :param float threshold: threshold for filtering similar items, which overwrites the one in the Filter
+        :param float threshold: value which used in the sort method to eliminate not interesting comparisons
         :param str compressor: compression method name, or None to use the default one
         """
-        self.e1 = e1
-        self.e2 = e2
         if F is None:
             raise ValueError("A valid filter dict is required!")
 
-        if threshold is not None:
-            # overwrite the threshold if specified
-            debug("Overwriting threshold {} with {}".format(F[FILTER_SORT_VALUE], threshold))
-            F[FILTER_SORT_VALUE] = threshold
+        if not (0 <= threshold <= 1):
+            raise ValueError("threshold must be a number between 0 and 1!")
+        self.threshold = threshold
+
+        self.e1 = e1
+        self.e2 = e2
 
         self.sim = Similarity()
 
@@ -217,6 +223,10 @@ class Elsim:
         self.ref_set_ident = dict()
 
     def _init_index_elements(self):
+        """
+        Starts to add all elements from the two iterators
+        to the filter structure and calculate hashes for all elements.
+        """
         self.__init_index_elements(self.e1)
         self.__init_index_elements(self.e2)
 
@@ -226,16 +236,21 @@ class Elsim:
         self.ref_set_ident[iterable] = {}
 
         for element in iterable:
+            # Generate the elements for storing the hashes in
+            # This element must have the methods get_info, set_checksum, getsha256
             e = self.filters[BASE][FILTER_ELEMENT_METH](element, iterable)
 
+            # Check if the element shall be skipped
             if self.filters[BASE][FILTER_SKIPPED_METH].skip(e):
                 self.filters[SKIPPED_ELEMENTS].append(e)
                 continue
 
+            # Add the element to the list of elements for the given Iterable
             self.filters[ELEMENTS][iterable].append(e)
             fm = self.filters[BASE][FILTER_CHECKSUM_METH](e, self.sim)
             e.set_checksum(fm)
 
+            # Hash the content and add the hash to our list of known hashes
             sha256 = e.getsha256()
             self.filters[HASHSUM][iterable].append(sha256)
 
@@ -271,7 +286,7 @@ class Elsim:
     def _init_sort_elements(self):
         deleted_elements = []
         for j in self.filters[SIMILAR_ELEMENTS]:
-            sort_h = self.filters[BASE][FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.filters[BASE][FILTER_SORT_VALUE])
+            sort_h = self.filters[BASE][FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.threshold)
             self.filters[SIMILARITY_SORT_ELEMENTS][j] = set(i[0] for i in sort_h)
 
             if sort_h == []:

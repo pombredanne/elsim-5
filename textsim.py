@@ -28,7 +28,7 @@ from elsim.similarity import Compress
         show_default=True,
         show_choices=True,
         help="Set the compression method")
-@click.option("-t", "--threshold", type=click.FloatRange(0, 1), help="Threshold for similarity measure, defines when two items are similar, overwrites the default")
+@click.option("-t", "--threshold", default=0.6, type=click.FloatRange(0, 1), help="Threshold when sorting interesting items")
 @click.argument('comp', nargs=2)
 def cli(display, compressor, threshold, comp):
     """

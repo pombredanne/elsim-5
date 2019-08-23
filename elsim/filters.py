@@ -8,3 +8,11 @@ def filter_sim_value_meth(value):
     """
     return 1.0 if value >= 0.2 else value
 
+
+class FilterNone:
+    """
+    A Filter which never filters anything
+    """
+    @staticmethod
+    def skip(element):
+        return False
