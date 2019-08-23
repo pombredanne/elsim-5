@@ -375,10 +375,15 @@ class Elsim:
         return list(self.filters[SIMILARITY_SORT_ELEMENTS][i])[0]
 
     def get_similarity_value(self, new=True):
-        values = []
+        """
+        Returns a score in percent of how similar the two files are
 
-        # FIXME: Why the fallback to BZ2 here? Should we not use the compression specified at the beginning?
-        self.sim.set_compress_type(Compress.BZ2)
+        The similarity value is calculated as the average similarity
+        between all elements. (?)
+
+        :param bool new: ???
+        """
+        values = []
 
         for j in self.filters[SIMILAR_ELEMENTS]:
             k = self.get_associated_element(j)
@@ -397,16 +402,9 @@ class Elsim:
             values.extend([self.filters[BASE][FILTER_SIM_VALUE_METH](1.0)
                            for i in self.filters[DELETED_ELEMENTS]])
 
-        self.sim.set_compress_type(self.compressor)
-
-        similarity_value = 0.0
-        for i in values:
-            similarity_value += (1.0 - i)
-
-        if len(values) == 0:
-            return 0.0
-
-        return (similarity_value/len(values)) * 100
+        # So actually we are calculating the NCS here from all the NCD values...
+        # Then we take the arithmetic mean and return it as percentage
+        return sum([1.0 - i for i in values]) / max(len(values), 1) * 100
 
     def show(self):
         """

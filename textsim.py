@@ -22,7 +22,7 @@ from elsim import Elsim, ELSIM_VERSION
 
 @click.command()
 @click.version_option(ELSIM_VERSION)
-@click.option("-d", "--display", is_flag=True, help="display the file in human readable format")
+@click.option("-d", "--display", is_flag=True, help="display detailed information about the changes")
 @click.argument('comp', nargs=2)
 def cli(display, comp):
     """
@@ -35,7 +35,7 @@ def cli(display, comp):
 
     el = Elsim(ProxyText(b1), ProxyText(b2), FILTERS_TEXT)
     el.show()
-    print(("\t--> sentences: %f%% of similarities" % el.get_similarity_value()))
+    print(("\t--> sentences: {}% of similarities".format(el.get_similarity_value())))
 
     if display:
         print("SIMILAR sentences:")
