@@ -32,7 +32,7 @@ class CheckSumText:
     def __init__(self, s1, sim):
         """
         :param bytes s1: the element
-        :param elsim.similarity.SIMILARITY sim: the similarity module
+        :param elsim.similarity.Similarity sim: the similarity module
         """
         self.s1 = s1
         self.sim = sim

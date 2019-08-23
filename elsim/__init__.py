@@ -17,7 +17,7 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from elsim.similarity import SIMILARITY, Compress
+from elsim.similarity import Similarity, Compress
 
 ELSIM_VERSION = 0.2
 
@@ -173,7 +173,7 @@ class Elsim:
             debug("Overwriting threshold {} with {}".format(F[FILTER_SORT_VALUE], threshold))
             F[FILTER_SORT_VALUE] = threshold
 
-        self.sim = SIMILARITY()
+        self.sim = Similarity()
 
         if compressor is not None:
             self.compressor = Compress.by_name(compressor.upper())

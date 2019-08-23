@@ -24,23 +24,8 @@ from enum import IntEnum
 from elsim.similarity import libsimilarity as ls
 
 
-def entropy(data):
-    """
-    Return Shannon entropy for bytes
-
-    :param bytes data: input
-    """
-    H = 0.0
-
-    if len(data) == 0:
-        return H
-
-    for x in range(256):
-        p_x = float(data.count(x))/len(data)
-        if p_x > 0:
-            H += - p_x*math.log(p_x, 2)
-
-    return H
+# Alias
+entropy = ls.entropy
 
 
 class Compress(IntEnum):
@@ -61,210 +46,7 @@ class Compress(IntEnum):
         raise ValueError("Compression method '{}' was not found!".format(name))
 
 
-class SIMILARITYBase:
-    def __init__(self):
-        self.ctype = Compress.ZLIB
-
-        self.__caches = {k: dict() for k in Compress}
-        self.__rcaches = {k: dict() for k in Compress}
-        self.__ecaches = dict()
-
-        self.level = 9
-
-    def set_level(self, level):
-        self.level = level
-
-    def get_in_caches(self, s):
-        try:
-            return self.__caches[self.ctype][zlib.adler32(s)]
-        except KeyError:
-            return 0
-
-    def get_in_rcaches(self, s1, s2):
-        try:
-            return self.__rcaches[self.ctype][zlib.adler32(s1 + s2)]
-        except KeyError:
-            try:
-                return self.__rcaches[self.ctype][zlib.adler32(s2 + s1)]
-            except KeyError:
-                return -1, -1
-
-    def add_in_caches(self, s, v):
-        h = zlib.adler32(s)
-        if h not in self.__caches[self.ctype]:
-            self.__caches[self.ctype][h] = v
-
-    def add_in_rcaches(self, s, v):
-        h = zlib.adler32(s)
-        if h not in self.__rcaches[self.ctype]:
-            self.__rcaches[self.ctype][h] = v
-
-    def clear_caches(self):
-        for i in self.__caches:
-            self.__caches[i] = {}
-
-    def add_in_ecaches(self, s, v, r):
-        h = zlib.adler32(s)
-        if h not in self.__ecaches:
-            self.__ecaches[h] = (v, r)
-
-    def get_in_ecaches(self, s1):
-        try:
-            return self.__ecaches[zlib.adler32(s1)]
-        except KeyError:
-            return -1, -1
-
-    def __nb_caches(self, caches):
-        nb = 0
-        for i in caches:
-            nb += len(caches[i])
-        return nb
-
-    def set_compress_type(self, t):
-        self.ctype = t
-
-    def show(self):
-        print("ECACHES", len(self.__ecaches))
-        print("RCACHES", self.__nb_caches(self.__rcaches))
-        print("CACHES", self.__nb_caches(self.__caches))
-
-
-class SIMILARITYNative(SIMILARITYBase):
-    def __init__(self):
-        super().__init__()
-        self.set_compress_type(self.ctype)
-
-    def compress(self, s1):
-        return ls.compress(self.level, s1)
-
-    def ncd(self, s1, s2):
-        # FIXME: use the cache again
-        # there is a flaw in the old design, as it would use a single cache for all functions
-        # hence, if you calculate ncd(s1, s2) and then ncs(s1, s2), you would get the result from
-        # before!
-        return ls.ncd(self.level, s1, s2)
-
-    def ncs(self, s1, s2):
-        # FIXME: use the cache again
-        return ls.ncs(self.level, s1, s2)
-
-    def cmid(self, s1, s2):
-        # FIXME: use the cache again
-        return ls.cmid(self.level, s1, s2)
-
-    def kolmogorov(self, s1):
-        return ls.kolmogorov(self.level, s1)
-
-    def bennett(self, s1):
-        return ls.bennett(self.level, s1)
-
-    def entropy(self, s1):
-        # FIXME: use the cache again
-        return ls.entropy(s1)
-
-    def RDTSC(self):
-        return ls.RDTSC()
-
-    def levenshtein(self, s1, s2):
-        return ls.levenshtein(s1, s2)
-
-    def set_compress_type(self, t):
-        super().set_compress_type(t)
-        ls.set_compress_type(t)
-
-
-class SIMILARITYPython(SIMILARITYBase):
-    def __init__(self):
-        super(SIMILARITYPython, self).__init__()
-
-    def set_compress_type(self, t):
-        self.ctype = t
-        if self.ctype not in (Compress.ZLIB, Compress.BZ2):
-            print(
-                "warning: compressor %s is not supported by python method (using ZLIB as fallback)" % t.name)
-            self.ctype = Compress.ZLIB
-
-    def compress(self, s1):
-        return len(self._compress(s1))
-
-    def _compress(self, s1):
-        if self.ctype == Compress.ZLIB:
-            return zlib.compress(s1, self.level)
-        if self.ctype == Compress.BZ2:
-            return bz2.compress(s1, self.level)
-
-    def _sim(self, s1, s2, func):
-        end = self.get_in_rcaches(s1, s2)
-        if end != -1:
-            return end
-
-        corig = self.get_in_caches(s1)
-        ccmp = self.get_in_caches(s2)
-
-        res, corig, ccmp = func(s1, s2, corig, ccmp)
-
-        self.add_in_caches(s1, corig)
-        self.add_in_caches(s2, ccmp)
-        self.add_in_rcaches(s1+s2, res)
-
-        return res
-
-    def _ncd(self, s1, s2, s1size=0, s2size=0):
-        if s1size == 0:
-            s1size = self.compress(s1)
-
-        if s2size == 0:
-            s2size = self.compress(s2)
-
-        s3size = self.compress(s1+s2)
-
-        smax = max(s1size, s2size)
-        smin = min(s1size, s2size)
-
-        res = (abs(s3size - smin)) / float(smax)
-        if res > 1.0:
-            res = 1.0
-
-        return res, s1size, s2size
-
-    def ncd(self, s1, s2):
-        return self._sim(s1, s2, self._ncd)
-
-    def ncs(self, s1, s2):
-        ncd, l1, l2 = self.ncd(s1, s2)
-        return 1.0 - ncd, l1, l2
-
-    def entropy(self, s1):
-        end, ret = self.get_in_ecaches(s1)
-        if end != -1:
-            return end, ret
-
-        res = entropy(s1)
-        self.add_in_ecaches(s1, res, 0)
-
-        return res
-
-    def levenshtein(self, a, b):
-        n, m = len(a), len(b)
-        if n > m:
-            # Make sure n <= m, to use O(min(n,m)) space
-            a, b = b, a
-            n, m = m, n
-
-        current = range(n + 1)
-        for i in range(1, m + 1):
-            previous, current = current, [i]+[0]*n
-            for j in range(1, n + 1):
-                add, delete = previous[j]+1, current[j-1]+1
-                change = previous[j-1]
-                if a[j-1] != b[i-1]:
-                    change = change + 1
-                current[j] = min(add, delete, change)
-
-        return current[n]
-
-
-class SIMILARITY:
+class Similarity:
     """
     The Similarity class capsules all important functions for calculating
     similarities.
@@ -278,47 +60,16 @@ class SIMILARITY:
     This means, that there is a slight decrease in speed when using only
     a few items, but there should be an increase if a reasonable number
     of strings is compared.
-
     """
-
-    def __init__(self, native_lib=True):
+    def __init__(self, ctype=Compress.ZLIB, level=9):
         """
 
-        :param bool native_lib: True of native lib should be used or False for pure python version
+        :param Compress ctype: type of compressor to use
+        :param int level: level of compression to apply
         """
-        if native_lib:
-            try:
-                self.s = SIMILARITYNative()
-            except Exception as e:
-                print(e)
-                self.s = SIMILARITYPython()
-        else:
-            self.s = SIMILARITYPython()
-
-    def set_level(self, level):
-        """
-        Set the compression level, if compression supports it
-
-        Usually this is an integer value between 0 and 9
-
-        :param int level: compression level
-        """
-        return self.s.set_level(level)
-
-    def set_compress_type(self, t):
-        """"
-        Set the type of compressor to use
-
-        :param Compress t: the compression method
-        """
-        return self.s.set_compress_type(t)
-
-    @staticmethod
-    def _encode(s):
-        """Checks if bytes or encode with UTF-8"""
-        if isinstance(s, bytes):
-            return s
-        return s.encode('UTF-8')
+        self.level = level
+        self.ctype = ctype
+        self.set_compress_type(self.ctype)
 
     def compress(self, s1):
         """
@@ -326,7 +77,7 @@ class SIMILARITY:
 
         :param bytes s1: the string to compress
         """
-        return self.s.compress(self._encode(s1))
+        return ls.compress(self.level, s1)
 
     def ncd(self, s1, s2):
         """
@@ -339,7 +90,12 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.ncd(self._encode(s1), self._encode(s2))[0]
+        # FIXME: use the cache again
+        # there is a flaw in the old design, as it would use a single cache for all functions
+        # hence, if you calculate ncd(s1, s2) and then ncs(s1, s2), you would get the result from
+        # before!
+        n, ls1, ls2 = ls.ncd(self.level, s1, s2)
+        return n
 
     def ncs(self, s1, s2):
         """
@@ -349,7 +105,9 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.ncs(self._encode(s1), self._encode(s2))[0]
+        # FIXME: use the cache again
+        n, ls1, ls2 = ls.ncs(self.level, s1, s2)
+        return n
 
     def cmid(self, s1, s2):
         """
@@ -361,7 +119,9 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.cmid(self._encode(s1), self._encode(s2))[0]
+        # FIXME: use the cache again
+        n, ls1, ls2 = ls.cmid(self.level, s1, s2)
+        return n
 
     def kolmogorov(self, s1):
         """
@@ -374,7 +134,7 @@ class SIMILARITY:
 
         :param bytes s1: input string
         """
-        return self.s.kolmogorov(self._encode(s1))
+        return ls.kolmogorov(self.level, s1)
 
     def bennett(self, s1):
         """
@@ -384,7 +144,7 @@ class SIMILARITY:
 
         :param bytes s1: input string
         """
-        return self.s.bennett(self._encode(s1))
+        return ls.bennett(self.level, s1)
 
     def entropy(self, s1):
         """
@@ -392,14 +152,15 @@ class SIMILARITY:
 
         :param bytes s1: input
         """
-        return self.s.entropy(self._encode(s1))
+        # FIXME: use the cache again
+        return ls.entropy(s1)
 
     def RDTSC(self):
         """
         Returns the value in the Timestamp Counter
         which is a CPU register
         """
-        return self.s.RDTSC()
+        return ls.RDTSC()
 
     def levenshtein(self, s1, s2):
         """
@@ -408,10 +169,26 @@ class SIMILARITY:
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
-        return self.s.levenshtein(self._encode(s1), self._encode(s2))
+        return ls.levenshtein(s1, s2)
 
-    def show(self):
-        self.s.show()
+    def set_compress_type(self, t):
+        """"
+        Set the type of compressor to use
+
+        :param Compress t: the compression method
+        """
+        self.ctype = t
+        ls.set_compress_type(t)
+
+    def set_level(self, level):
+        """
+        Set the compression level, if compression supports it
+
+        Usually this is an integer value between 0 and 9
+
+        :param int level: compression level
+        """
+        self.level = level
 
 
 class DBFormat(object):
