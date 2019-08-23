@@ -15,6 +15,10 @@ def filter_sort_meth_basic(element, similar_elements, value):
     # Sort all items by the value, which is the distance
     z = sorted(similar_elements.items(), key=itemgetter(1))
 
+    if z == []:
+        # This Element has no similar items
+        return []
+
     if z[:1][0][1] > value:
         return []
 
