@@ -324,10 +324,9 @@ class Method:
 
         self.sort_h = []
 
-        self.hash = {}
         self.__hash = None
 
-    def get_info(self):
+    def __str__(self):
         return "%s %s %s %d" % (self.m.get_class_name(), self.m.get_name(), self.m.get_descriptor(), self.m.get_length())
 
     def get_length(self):
@@ -338,7 +337,8 @@ class Method:
         self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def __hash__(self):
+    @property
+    def hash(self):
         return self.__hash
 
     def diff(self, func_sim_bb, func_diff_ins):
@@ -498,10 +498,11 @@ class BasicBlock:
         self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def __hash__(self):
+    @property
+    def hash(self):
         return self.__hash
 
-    def get_info(self):
+    def __str__(self):
         return self.bb.name
 
     def show(self):
@@ -521,11 +522,12 @@ class StringVM:
     def get_length(self):
         return len(self.el)
 
-    def __hash__(self):
+    @property
+    def hash(self):
         return self.__hash
 
-    def get_info(self):
-        return len(self.el), repr(self.el)
+    def __str__(self):
+        return repr(self.el)
 
 
 class CheckSumString:

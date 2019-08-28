@@ -89,14 +89,15 @@ class Function(object):
     def get_nb_instructions(self):
         return len(self.function.get_instructions())
 
-    def get_info(self):
-        return "%s" % (self.function.name)
+    def __str__(self):
+        return self.function.name
 
     def set_checksum(self, fm):
         self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def __hash__(self):
+    @property
+    def hash(self):
         return self.__hash
 
 

@@ -69,8 +69,8 @@ class Text:
         self.string = element.strip(b' ')
         self.__hash = None
 
-    def get_info(self):
-        return "%d '%s'" % (len(self.string), repr(self.string))
+    def __str__(self):
+        return repr(self.string)
 
     def set_checksum(self, fm):
         """
@@ -79,11 +79,12 @@ class Text:
         self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
-    def __hash__(self):
+    @property
+    def hash(self):
         return self.__hash
 
     def __repr__(self):
-        return self.get_info()
+        return str(self)
 
 
 FILTERS_TEXT = {

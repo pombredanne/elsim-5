@@ -1,34 +1,26 @@
-#!/usr/bin/env python
+import os
 
-# This file is part of Androguard.
-#
-# Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
-# All rights reserved.
-#
-# Androguard is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Androguard is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
+import click
+from androguard.core import androconf
+from androguard.misc import AnalyzeAPK, AnalyzeDex
 
-from elsim import ELSIM_VERSION
+from elsim import ELSIM_VERSION, Elsim
 from elsim.similarity import Compress
 from elsim.dalvik import ProxyDalvikString, FILTERS_DALVIK_SIM_STRING
 from elsim.dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
 import elsim
-import sys
-import os
-import click
 
-from androguard.core import androconf
-from androguard.misc import AnalyzeAPK, AnalyzeDex
+
+def load_analysis(filename):
+    """Return an AnalysisObject depding on the filetype"""
+    ret_type = androconf.is_android(filename)
+    if ret_type == "APK":
+        _, _, dx = AnalyzeAPK(filename)
+        return dx
+    if ret_type == "DEX":
+        _, _, dx = AnalyzeDex(filename)
+        return dx
+    return None
 
 
 def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted):
@@ -44,26 +36,14 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
     :param bool new: should the similarity score include new elements
     :param bool deleted: should the similarity score include deleted elements
     """
-    el = elsim.Elsim(ProxyDalvik(dx1), ProxyDalvik(dx2), FS, threshold, compressor)
+    el = Elsim(ProxyDalvik(dx1), ProxyDalvik(dx2), FS, threshold, compressor)
     print("Calculating similarity based on methods")
     el.show(new, deleted, details)
 
     if view_strings:
-        els = elsim.Elsim(ProxyDalvikString(dx1), ProxyDalvikString(dx2), FILTERS_DALVIK_SIM_STRING, threshold, compressor)
+        els = Elsim(ProxyDalvikString(dx1), ProxyDalvikString(dx2), FILTERS_DALVIK_SIM_STRING, threshold, compressor)
         print("Calculating similarity based on strings")
         els.show(new, deleted, details)
-
-
-def load_analysis(filename):
-    """Return an AnalysisObject depding on the filetype"""
-    ret_type = androconf.is_android(filename)
-    if ret_type == "APK":
-        _, _, dx = AnalyzeAPK(filename)
-        return dx
-    elif ret_type == "DEX":
-        _, _, dx = AnalyzeDex(filename)
-        return dx
-    return None
 
 
 @click.command()
@@ -73,8 +53,10 @@ def load_analysis(filename):
         show_default=True,
         show_choices=True,
         help="Set the compression method")
-@click.option("-t", "--threshold", default=0.6, type=click.FloatRange(0, 1), help="Threshold when sorting interesting items")
-@click.option("-s", "--size", type=int, help='exclude specific method below the specific size (specify the minimum size of a method to be used (it is the length (bytes) of the dalvik method)')
+@click.option("-t", "--threshold", default=0.6, type=click.FloatRange(0, 1),
+        help="Threshold when sorting interesting items")
+@click.option("-s", "--size", type=int,
+        help='exclude specific method below the specific size (specify the minimum size of a method to be used (it is the length (bytes) of the dalvik method)')
 @click.option("-e", "--exclude", type=str, help="exlude class names (python regex string)")
 @click.option("--new/--no-new", help="calculate similarity score by including new elements", show_default=True)
 @click.option("--deleted/--no-deleted", help="calculate similarity score by using deleted elementes", show_default=True)
@@ -89,6 +71,9 @@ def cli(details, compressor, threshold, size, exclude, new, deleted, xstrings, c
     APK or DEX files.
     In the latter case, the first file is compared against all files in the folder
     recursively.
+
+    If --deleted or --new is not used, a '**' after the numbers indicates
+    that these items were not used to calculate the similarity score.
     """
     dx1 = load_analysis(comp[0])
     if dx1 is None:
