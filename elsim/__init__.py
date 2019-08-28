@@ -77,17 +77,19 @@ FILTER_SORT_METH = "FILTER_SORT_METH"
 # and should return True if the given element shall be skipped.
 FILTER_SKIPPED_METH = "FILTER_SKIPPED_METH"
 
-BASE = "base"
-ELEMENTS = "elements"
-HASHSUM = "hashsum"
+# FIXME: We use these constants just as a key... should migrate this into some objects...
 SIMILAR_ELEMENTS = "similar_elements"
+NEW_ELEMENTS = "new_elements"
+DELETED_ELEMENTS = "deleted_elements"
+IDENTICAL_ELEMENTS = "identical_elements"
+SKIPPED_ELEMENTS = "skipped_elements"
+LINK_ELEMENTS = "link_elements"
+
 HASHSUM_SIMILAR_ELEMENTS = "hash_similar_elements"
-NEW_ELEMENTS = "newelements"
-DELETED_ELEMENTS = "deletedelements"
-IDENTICAL_ELEMENTS = "identicalelements"
-SKIPPED_ELEMENTS = "skippedelements"
 SIMILARITY_ELEMENTS = "similarity_elements"
 SIMILARITY_SORT_ELEMENTS = "similarity_sort_elements"
+
+DIFF = "diff"
 
 
 class ElsimNeighbors:
@@ -120,8 +122,6 @@ class ElsimNeighbors:
             idx += 1
 
         return l
-
-
 
 
 class Proxy:
@@ -276,20 +276,25 @@ class Elsim:
             self.compressor = Compress.SNAPPY
         self.sim.set_compress_type(self.compressor)
 
+
         # Initialize the filters
         # FIXME: this could be replaced by attributes on this class instead of the large dict.
         # FIXME: rethink all the items here... maybe we can remove a few
-        self.filters = {
-            BASE: F,
-            ELEMENTS: defaultdict(list),  # for each iterable, contains all elements
-            HASHSUM: defaultdict(list),  # for each iterable, contains all hashes of the elements
+        # FIXME the main reason that we need the proxy object here and can not simply use a list
+        # is that we need a hashable object. We could work around this by creating two keys for the
+        # two elements and not use the iterable itself.
 
-            # FIXME: list vs set
+        # FIXME: set vs list 
+        self.__elements = defaultdict(list)  # for each iterable, contains all elements
+        self.__hashes = defaultdict(list)  # for each iterable, contains all hashes
+        self.__base = F  # contains the filter functions
+
+        self.filters = {
             IDENTICAL_ELEMENTS: set(),  # contains all identical elements from both iterables
-            SIMILAR_ELEMENTS: [],  # contains all similar elements from both iterables
+            SIMILAR_ELEMENTS: set(),  # contains all similar elements from both iterables
             NEW_ELEMENTS: set(),  # contains new elements, only from s2
-            DELETED_ELEMENTS: [],  # contains deleted elements, only from s1
-            SKIPPED_ELEMENTS: [],  # contains all skipped elements from both iterables
+            DELETED_ELEMENTS: set(),  # contains deleted elements, only from s1
+            SKIPPED_ELEMENTS: set(),  # contains all skipped elements from both iterables
 
             HASHSUM_SIMILAR_ELEMENTS: [],
             SIMILARITY_ELEMENTS: dict(),
@@ -299,9 +304,11 @@ class Elsim:
         # Contains all Hashes of each iterable
         self.set_els = defaultdict(set)
         # Contains a lookup for the hash to get the first element with this hash, for each iterable
+        # FIXME: why we need this and ref_set_ident as well? The latter should be sufficient?!
+        # Because, there might be several Elements per hash! Hence, we need only the latter element
         self.ref_set_els = defaultdict(dict)
         # Contains a lookup for the hash to get all elements that share the same hash, for each iterable
-        self.ref_set_ident = defaultdict(dict)
+        self.ref_set_ident = defaultdict(lambda: defaultdict(list))
 
         # Starts to add all elements from the two iterators
         # to the filter structure and calculate hashes for all elements.
@@ -322,31 +329,30 @@ class Elsim:
         for element in iterable:
             # Generate the Elements for storing the hashes in
             # This element must have the methods set_checksum, hash
-            e = self.filters[BASE][FILTER_ELEMENT_METH](element, iterable)
+            e = self.__base[FILTER_ELEMENT_METH](element, iterable)
 
             # Check if the element shall be skipped
-            if self.filters[BASE][FILTER_SKIPPED_METH].skip(e):
-                self.filters[SKIPPED_ELEMENTS].append(e)
+            if self.__base[FILTER_SKIPPED_METH].skip(e):
+                self.filters[SKIPPED_ELEMENTS].add(e)
                 continue
 
-            # Add the element to the list of elements for the given Iterable
-            self.filters[ELEMENTS][iterable].append(e)
+            # If not skipped, add the element to the list of elements for the given Iterable
+            self.__elements[iterable].append(e)
+
             # Create the Checksum object, which might transform the content
             # and is used to calculate distances and checksum.
             # FIXME: We could reduce this to just a single call of FILTER_ELEMENT_METH.
             # I think the rationale behind this setup was, to be able to skip the creation
             # of the possible expensive call to FILTER_CHECKSUM_METH...
-            fm = self.filters[BASE][FILTER_CHECKSUM_METH](e, self.sim)
-            e.set_checksum(fm)
+            e.set_checksum(self.__base[FILTER_CHECKSUM_METH](e, self.sim))
 
             # Hash the content and add the hash to our list of known hashes
-            self.filters[HASHSUM][iterable].append(e.hash)
+            self.__hashes[iterable].append(e.hash)
 
             if e.hash not in self.set_els[iterable]:
                 self.set_els[iterable].add(e.hash)
                 self.ref_set_els[iterable][e.hash] = e
 
-                self.ref_set_ident[iterable][e.hash] = []
             self.ref_set_ident[iterable][e.hash].append(e)
 
     def _init_similarity(self):
@@ -377,11 +383,11 @@ class Elsim:
             self.filters[SIMILARITY_ELEMENTS][j] = dict()
             for k in available_e2_elements:
                 # Calculate and store the similarity between j and k
-                self.filters[SIMILARITY_ELEMENTS][j][k] = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
+                self.filters[SIMILARITY_ELEMENTS][j][k] = self.__base[FILTER_SIM_METH](self.sim, j, k)
 
             # Store, that j has similar elements
             if j.hash not in self.filters[HASHSUM_SIMILAR_ELEMENTS]:
-                self.filters[SIMILAR_ELEMENTS].append(j)
+                self.filters[SIMILAR_ELEMENTS].add(j)
                 self.filters[HASHSUM_SIMILAR_ELEMENTS].append(j.hash)
 
     def _init_sort_elements(self):
@@ -394,7 +400,7 @@ class Elsim:
         """
         deleted_elements = []
         for j in self.filters[SIMILAR_ELEMENTS]:
-            sort_h = self.filters[BASE][FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.threshold)
+            sort_h = self.__base[FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.threshold)
 
             # Store the similar Element(s)
             self.filters[SIMILARITY_SORT_ELEMENTS][j] = set(i[0] for i in sort_h)
@@ -404,7 +410,7 @@ class Elsim:
                 deleted_elements.append(j)
 
         for j in deleted_elements:
-            self.filters[DELETED_ELEMENTS].append(j)
+            self.filters[DELETED_ELEMENTS].add(j)
             self.filters[SIMILAR_ELEMENTS].remove(j)
 
     def _init_new_elements(self):
@@ -415,10 +421,10 @@ class Elsim:
         but do not have any connection from the first.
         """
         # Check if some elements in the second file are totally new
-        for j in self.filters[ELEMENTS][self.e2]:
+        for j in self.__elements[self.e2]:
             # new elements can't be in similar elements
             # and hashes can't be in first file, i.e. unique to second file
-            if j not in self.filters[SIMILAR_ELEMENTS] and j.hash not in self.filters[HASHSUM][self.e1]:
+            if j not in self.filters[SIMILAR_ELEMENTS] and j.hash not in self.__hashes[self.e1]:
                 is_new = True
                 # new elements can't be compared to another one
                 for diff_element in self.filters[SIMILAR_ELEMENTS]:
@@ -504,6 +510,9 @@ class Elsim:
         return l
 
     def get_associated_element(self, i):
+        """
+        Get the most similar element, if any, for element i
+        """
         return list(self.filters[SIMILARITY_SORT_ELEMENTS][i])[0]
 
     def _similarity_threshold(self, value):
@@ -529,7 +538,11 @@ class Elsim:
         If neither new and deleted items would be counted: 1/2 * (1 + 0.75) = 87.5%
         If only new items would be counted: 1/3 * (1 + 0.75 + 0) = 58.33%
 
-        Skipped Items are never investigated.
+        Skipped items are never investigated.
+
+        If there are no items to compare, a similarity score of zero is returned.
+        It is questionable if this is the correct way, as two empty sets are
+        perfectly similar, but this shall be fixed in the future.
 
         :param bool new: Should new elements regarded as beeing dissimilar
         :param bool deleted: Should deleted elements regarded as beeing dissimilar
@@ -538,7 +551,7 @@ class Elsim:
 
         for j in self.filters[SIMILAR_ELEMENTS]:
             k = self.get_associated_element(j)
-            value = self.filters[BASE][FILTER_SIM_METH](self.sim, j, k)
+            value = self.__base[FILTER_SIM_METH](self.sim, j, k)
             # filter value
             values.append(self._similarity_threshold(value))
 
@@ -616,11 +629,6 @@ class Elsim:
                     self.show_element(i, False)
 
 
-ADDED_ELEMENTS = "added elements"
-DELETED_ELEMENTS = "deleted elements"
-LINK_ELEMENTS = "link elements"
-DIFF = "diff"
-
 
 class Eldiff:
     def __init__(self, iterator, F):
@@ -633,20 +641,18 @@ class Eldiff:
     def _init_filters(self):
         self.filters = {}
 
-        self.filters[BASE] = self.F
-        self.filters[ELEMENTS] = {}
-        self.filters[ADDED_ELEMENTS] = {}
+        self.filters[NEW_ELEMENTS] = {}
         self.filters[DELETED_ELEMENTS] = {}
         self.filters[LINK_ELEMENTS] = {}
 
     def _init_diff(self):
         for i, j in self.iterator:
-            self.filters[ADDED_ELEMENTS][j] = []
+            self.filters[NEW_ELEMENTS][j] = []
             self.filters[DELETED_ELEMENTS][i] = []
 
-            x = self.filters[BASE][DIFF](i, j)
+            x = self.F[DIFF](i, j)
 
-            self.filters[ADDED_ELEMENTS][j].extend(x.get_added_elements())
+            self.filters[NEW_ELEMENTS][j].extend(x.get_added_elements())
             self.filters[DELETED_ELEMENTS][i].extend(x.get_deleted_elements())
 
             self.filters[LINK_ELEMENTS][j] = i
@@ -656,8 +662,8 @@ class Eldiff:
             print(str(bb), str(self.filters[LINK_ELEMENTS][bb]))
 
             print("Added Elements(%d)" %
-                  (len(self.filters[ADDED_ELEMENTS][bb])))
-            for i in self.filters[ADDED_ELEMENTS][bb]:
+                  (len(self.filters[NEW_ELEMENTS][bb])))
+            for i in self.filters[NEW_ELEMENTS][bb]:
                 print("\t", end=' ')
                 i.show()
 
@@ -669,7 +675,7 @@ class Eldiff:
             print()
 
     def get_added_elements(self):
-        return self.filters[ADDED_ELEMENTS]
+        return self.filters[NEW_ELEMENTS]
 
     def get_deleted_elements(self):
         return self.filters[DELETED_ELEMENTS]

@@ -22,6 +22,7 @@ def filter_sort_meth_basic(element, similar_elements, value):
     if z[:1][0][1] > value:
         return []
 
+    # The first item will be the one with the lowest distance, i.e. the most similar
     return z[:1]
 
 class FilterNone:

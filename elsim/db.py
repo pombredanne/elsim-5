@@ -95,7 +95,7 @@ class ElsimDB(object):
                     method, predef_sign=DEFAULT_SIGNATURE).get_list()
 
                 for i in buff_list:
-                    elem_hash = long(simhash(i))
+                    elem_hash = int(simhash(i))
                     elems_hash.add(elem_hash)
 
         ret, info = self.db.elems_are_presents(elems_hash)
@@ -140,7 +140,7 @@ class ElsimDB(object):
                     method, predef_sign=DEFAULT_SIGNATURE).get_list()
 
                 for i in buff_list:
-                    elem_hash = long(simhash(i))
+                    elem_hash = int(simhash(i))
                     elems_hash.add(elem_hash)
 
                 class_size += method.get_length()
@@ -178,7 +178,7 @@ class ElsimDB(object):
                     method, predef_sign=DEFAULT_SIGNATURE).get_list()
 
                 for i in buff_list:
-                    elem_hash = long(simhash(i))
+                    elem_hash = int(simhash(i))
                     elems_hash.add(elem_hash)
 
             ret = self.db.elems_are_presents(elems_hash)
@@ -240,7 +240,7 @@ class ElsimDBIn(object):
 
                 for e in buff_list:
                     self.db.add_element(name, sname, _class.get_name(
-                    ), method.get_length(), long(simhash(e)))
+                    ), method.get_length(), int(simhash(e)))
 
     def save(self):
         self.db.save()
