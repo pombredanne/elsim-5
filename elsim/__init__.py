@@ -55,6 +55,7 @@ def debug(x):
 # Object to store element information in
 # This will be applied to every element in the iterable.
 # from an element, we construct an Element...
+# Arguments to this function: the element itself, the iterable (Proxy Object)
 FILTER_ELEMENT_METH = "FILTER_ELEMENT_METH"
 # Object to checksum an element
 # Next this Object is created, which might be used

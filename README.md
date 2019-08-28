@@ -29,6 +29,13 @@ Changes to original library
 * Changed Filter System in Elsim
 * Renamed modules and moved them around
 
+Things that need design re-considerations
+-----------------------------------------
+
+currently there are two objects used to store the elements.
+The first is a wrapper for the original element, the second a wrapper for the modified one.
+This should somehow be replaced and all the lookups in the dicts can be enhanced as well.
+
 Projects used
 -------------
 

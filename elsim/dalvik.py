@@ -40,10 +40,10 @@ class FilterSkip:
         self.regexp = regexp
 
     def skip(self, m):
-        if self.size != None and m.get_length() < self.size:
+        if self.size is not None and m.get_length() < self.size:
             return True
 
-        if self.regexp != None and re.match(self.regexp, m.m.get_class_name()) != None:
+        if self.regexp is not None and re.match(self.regexp, m.m.get_class_name()) != None:
             return True
 
         return False
@@ -59,32 +59,32 @@ class FilterSkip:
 
 
 FILTERS_DALVIK_SIM = {
-    elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
-    elsim.FILTER_SIM_METH: filter_sim_meth_basic,
+    # input element, iterator
+    elsim.FILTER_ELEMENT_METH: lambda element, iterator: Method(iterator.vmx, element),
+    elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumMeth(element, sim),
+    elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_signature(), e2.checksum.get_signature()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterSkip(None, None),
 }
 
 FILTERS_DALVIK_SIM_STRING = {
-    elsim.FILTER_ELEMENT_METH: filter_element_meth_string,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_string,
-    elsim.FILTER_SIM_METH: filter_sim_meth_string,
-    elsim.FILTER_SORT_METH: filter_sort_meth_string,
+        elsim.FILTER_ELEMENT_METH: lambda element, iterator: StringVM(element),
+        elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumString(element, sim),
+        elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_buff(), e2.checksum.get_buff()),
+    elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterNone,
 }
 
 FILTERS_DALVIK_BB = {
-    elsim.FILTER_ELEMENT_METH: filter_element_bb_basic,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_bb_basic,
-    elsim.FILTER_SIM_METH: filter_sim_bb_basic,
-    elsim.FILTER_SORT_METH: filter_sort_bb_basic,
+    # input element, iterator
+    # FIXME: this might be iterator instead?
+    elsim.FILTER_ELEMENT_METH: lambda element, iterator: BasicBlock(element),
+    elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumBB(element, sim),
+    elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_buff(), e2.checksum.get_buff()),
+    elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterNone,
 }
 
-FILTERS_DALVIK_DIFF_BB = {
-    elsim.DIFF: filter_diff_bb,
-}
 
 
 class CheckSumMeth:
@@ -130,30 +130,6 @@ class CheckSumMeth:
         return self.buff
 
 
-def filter_checksum_meth_basic(m1, sim):
-    return CheckSumMeth(m1, sim)
-
-
-def filter_sim_meth_old(m1, m2, sim):
-    a1 = m1.checksum
-    a2 = m2.checksum
-
-    e1 = a1.get_entropy()
-    e2 = a2.get_entropy()
-
-    return (max(e1, e2) - min(e1, e2))
-
-
-def filter_sim_meth_basic(sim, m1, m2):
-    ncd1 = sim.ncd(m1.checksum.get_signature(), m2.checksum.get_signature())
-    return ncd1
-
-
-def filter_sim_bb_basic(sim, bb1, bb2):
-    ncd = sim.ncd(bb1.checksum.get_buff(), bb2.checksum.get_buff())
-    return ncd
-
-
 class CheckSumBB:
     def __init__(self, basic_block, sim):
         self.basic_block = basic_block
@@ -169,10 +145,6 @@ class CheckSumBB:
 
     def get_hash(self):
         return self.hash
-
-
-def filter_checksum_bb_basic(basic_block, sim):
-    return CheckSumBB(basic_block, sim)
 
 
 DIFF_INS_TAG = {
@@ -316,9 +288,8 @@ DIFF_BB_TAG = {
 
 
 class Method:
-    def __init__(self, vm, vmx, m):
+    def __init__(self, vmx, m):
         self.m = m
-        self.vm = vm
         self.vmx = vmx
         self.mx = vmx.get_method(m)
 
@@ -508,10 +479,6 @@ class Method:
             bytecode.PrettyShow1(self.mx.basic_blocks.get())
 
 
-def filter_element_meth_basic(el, e):
-    return Method(e.vm, e.vmx, el)
-
-
 class BasicBlock:
     def __init__(self, bb):
         self.bb = bb
@@ -529,23 +496,6 @@ class BasicBlock:
 
     def show(self):
         print(self.bb.name)
-
-
-def filter_element_bb_basic(el, e):
-    return BasicBlock(el)
-
-
-def filter_sort_bb_basic(j, x, value):
-    z = sorted(x.items(), key=itemgetter(1))
-
-    if get_debug():
-        for i in z:
-            debug("\t %s %f" % (i[0].get_info(), i[1]))
-
-    if z[:1][0][1] > value:
-        return []
-
-    return z[:1]
 
 
 class StringVM:
@@ -568,10 +518,6 @@ class StringVM:
         return len(self.el), repr(self.el)
 
 
-def filter_element_meth_string(el, e):
-    return StringVM(el)
-
-
 class CheckSumString:
     def __init__(self, m1, sim):
         self.m1 = m1
@@ -583,42 +529,21 @@ class CheckSumString:
         return self.buff
 
 
-def filter_checksum_meth_string(m1, sim):
-    return CheckSumString(m1, sim)
-
-
-def filter_sim_meth_string(sim, m1, m2):
-    ncd1 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
-    return ncd1
-
-
-def filter_sort_meth_string(j, x, value):
-    z = sorted(x.items(), key=itemgetter(1))
-
-    if get_debug():
-        for i in z:
-            debug("\t %s %f" % (i[0].get_info(), i[1]))
-
-    if z[:1][0][1] > value:
-        return []
-
-    return z[:1]
-
-
 class ProxyDalvik:
     """
     A simple proxy which uses the methods for comparison
     """
-    def __init__(self, vm, vmx):
+    def __init__(self, vmx):
         """
-        :param androguard.core.bytecodes.dvm.DalvikVMFormat vm:
         :param androgaurd.core.analysis.analysis.Analysis vmx:
         """
-        self.vm = vm
         self.vmx = vmx
 
     def __iter__(self):
-        yield from self.vm.get_methods()
+        """
+        yield many EncodedMethod
+        """
+        yield from [x.get_method() for x in self.vmx.get_methods() if not x.is_external()]
 
 
 class ProxyDalvikMethod:
@@ -631,25 +556,19 @@ class ProxyDalvikMethod:
 
 
 class ProxyDalvikStringMultiple:
-    def __init__(self, vm, vmx):
-        self.vm = vm
+    def __init__(self, vmx):
         self.vmx = vmx
 
     def __iter__(self):
-        # FIXME: no more tainted_variables
-        for i in self.vmx.get_tainted_variables().get_strings():
-            yield i[1]
-            # for i in self.vm.get_strings():
-            #    yield i
-
+        for i in self.vmx.get_strings():
+            yield i.get_value()
 
 class ProxyDalvikStringOne:
-    def __init__(self, vm, vmx):
-        self.vm = vm
+    def __init__(self, vmx):
         self.vmx = vmx
 
     def __iter__(self):
-        yield ''.join(self.vm.get_strings())
+        yield ''.join([x.get_value() for x in self.vmx.get_strings()])
 
 
 def LCS(X, Y):
@@ -772,6 +691,11 @@ def filter_diff_bb(x, y):
         final_rm.append((i[0], map_x[i[0]], instructions[i[0]]))
 
     return DiffBasicBlock(y, x, final_add, final_rm)
+
+
+FILTERS_DALVIK_DIFF_BB = {
+    elsim.DIFF: filter_diff_bb,
+}
 
 
 class ProxyDalvikBasicBlock:
