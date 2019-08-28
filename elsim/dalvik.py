@@ -430,9 +430,7 @@ class ProxyDalvikBasicBlock:
         self.esim = esim
 
     def __iter__(self):
-        x = elsim.split_elements(self.esim, self.esim.get_similar_elements())
-        for i in x:
-            yield i, x[i]
+        yield from self.esim.split_elements()
 
 
 class DiffDalvikMethod:
@@ -450,7 +448,6 @@ class DiffDalvikMethod:
               "<->", "[", self.get_info_method(self.m2), "]")
 
         self.eld.show()
-
         self.els.show()
         self._show_elements("NEW", self.els.get_new_elements())
 

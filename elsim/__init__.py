@@ -122,9 +122,6 @@ class ElsimNeighbors:
         return l
 
 
-def split_elements(element, iterable):
-    """Returns a list of associated elements from the given element"""
-    return {i: element.get_associated_element(i) for i in iterable}
 
 
 class Proxy:
@@ -431,6 +428,12 @@ class Elsim:
 
                 if is_new and j not in self.filters[NEW_ELEMENTS]:
                     self.filters[NEW_ELEMENTS].add(j)
+
+    def split_elements(self):
+        """
+        Returns a list of tuples of items which are associated to each other
+        """
+        return [(i, self.get_associated_element(i)) for i in self.get_similar_elements()]
 
     def get_similar_elements(self):
         """

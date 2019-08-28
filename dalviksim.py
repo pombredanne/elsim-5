@@ -56,24 +56,15 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
         els.show(new, deleted, details)
 
     if diff:
-        e1 = elsim.split_elements(el, el.get_similar_elements())
-        for i in e1:
+        for i, j in el.split_elements():
+            # split_elements returns tuples of similar elements
             # Get a list if "Method" objects
-            j = e1[i]
             # Instead of using the similarity on the whole Method, we calculate the similarites between the basic blocks
+            # FIXME: having like thousand classes here seems to be overcomplicated...
             elb = Elsim(ProxyDalvikMethod(i), ProxyDalvikMethod(j), FILTERS_DALVIK_BB, threshold, compressor)
             eld = Eldiff(ProxyDalvikBasicBlock(elb), FILTERS_DALVIK_DIFF_BB)
             ddm = DiffDalvikMethod(i, j, elb, eld)
             ddm.show()
-
-        if details:
-            print("NEW METHODS")
-            for i in el.get_new_elements():
-                el.show_element(i, False)
-
-            print("DELETED METHODS")
-            for i in el.get_deleted_elements():
-                el.show_element(i, False)
 
 
 @click.command()
