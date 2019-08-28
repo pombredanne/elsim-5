@@ -20,7 +20,7 @@
 
 from elsim import ELSIM_VERSION
 from elsim.similarity import Compress
-from elsim.dalvik import ProxyDalvikStringMultiple, ProxyDalvikStringOne, FILTERS_DALVIK_SIM_STRING
+from elsim.dalvik import ProxyDalvikString, FILTERS_DALVIK_SIM_STRING
 from elsim.dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
 import elsim
 import sys
@@ -31,73 +31,27 @@ from androguard.core import androconf
 from androguard.misc import AnalyzeAPK, AnalyzeDex
 
 
-def check_one_file(dx1, dx2, FS, threshold, compressor, display, view_strings, new):
+def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, removed):
+    """
+    Show similarities between two dalvik containers
+
+    :param androguard.core.analysis.analysis.Analysis dx1: first file
+    :param androguard.core.analysis.analysis.Analysis dx2: second file
+    :param dict FS: the filter basis
+    :param str compressor: compressor name
+    :param bool details: should extra information be shown
+    :param bool view_strings: also calculate the similarities based on strings
+    :param bool new: should the similarity score include new elements
+    :param bool removed: should the similarity score include deleted elements
+    """
     el = elsim.Elsim(ProxyDalvik(dx1), ProxyDalvik(dx2), FS, threshold, compressor)
-    print("Checking Similarity based on methods")
-    el.show()
-    print("\t--> methods: %f%% of similarities" % el.get_similarity_value(new))
-
-    if display:
-        print("SIMILAR methods:")
-        diff_methods = el.get_similar_elements()
-        for i in diff_methods:
-            el.show_element(i)
-
-        print("IDENTICAL methods:")
-        new_methods = el.get_identical_elements()
-        for i in new_methods:
-            el.show_element(i)
-
-        print("NEW methods:")
-        new_methods = el.get_new_elements()
-        for i in new_methods:
-            el.show_element(i, False)
-
-        print("DELETED methods:")
-        del_methods = el.get_deleted_elements()
-        for i in del_methods:
-            el.show_element(i)
-
-        print("SKIPPED methods:")
-        skipped_methods = el.get_skipped_elements()
-        for i in skipped_methods:
-            el.show_element(i)
+    print("Calculating similarity based on methods")
+    el.show(new, removed, details)
 
     if view_strings:
-        els = elsim.Elsim(ProxyDalvikStringMultiple(dx1),
-                          ProxyDalvikStringMultiple(dx2),
-                          FILTERS_DALVIK_SIM_STRING,
-                          threshold,
-                          compressor)
-        print("Checking Similarity based on strings")
-        els.show()
-        print("\t--> strings: %f%% of similarities" % els.get_similarity_value(new))
-
-        if display:
-            print("SIMILAR strings:")
-            diff_strings = els.get_similar_elements()
-            for i in diff_strings:
-                els.show_element(i)
-
-            print("IDENTICAL strings:")
-            new_strings = els.get_identical_elements()
-            for i in new_strings:
-                els.show_element(i)
-
-            print("NEW strings:")
-            new_strings = els.get_new_elements()
-            for i in new_strings:
-                els.show_element(i, False)
-
-            print("DELETED strings:")
-            del_strings = els.get_deleted_elements()
-            for i in del_strings:
-                els.show_element(i)
-
-            print("SKIPPED strings:")
-            skipped_strings = els.get_skipped_elements()
-            for i in skipped_strings:
-                els.show_element(i)
+        els = elsim.Elsim(ProxyDalvikString(dx1), ProxyDalvikString(dx2), FILTERS_DALVIK_SIM_STRING, threshold, compressor)
+        print("Calculating similarity based on strings")
+        els.show(new, removed, details)
 
 
 def load_analysis(filename):
@@ -114,7 +68,7 @@ def load_analysis(filename):
 
 @click.command()
 @click.version_option(ELSIM_VERSION)
-@click.option("-d", "--display", is_flag=True, help="display detailed information about the changes")
+@click.option("-d", "--details", is_flag=True, help="display detailed information about the changes")
 @click.option("-c", "--compressor", default="SNAPPY", type=click.Choice([x.name for x in Compress]),
         show_default=True,
         show_choices=True,
@@ -122,10 +76,11 @@ def load_analysis(filename):
 @click.option("-t", "--threshold", default=0.6, type=click.FloatRange(0, 1), help="Threshold when sorting interesting items")
 @click.option("-s", "--size", type=int, help='exclude specific method below the specific size (specify the minimum size of a method to be used (it is the length (bytes) of the dalvik method)')
 @click.option("-e", "--exclude", type=str, help="exlude class names (python regex string)")
-@click.option("-n", "--new", is_flag=True, help="calculate similarity score by only using the ratio of included methods")  # fixme: isnt that the wrong description?
+@click.option("--new/--no-new", help="calculate similarity score by including new elements", show_default=True)
+@click.option("--removed/--no-removed", help="calculate similarity score by using removed elementes", show_default=True)
 @click.option("-x", "--xstrings", is_flag=True, help="display similarites of strings")
 @click.argument('comp', nargs=2)
-def cli(display, compressor, threshold, size, exclude, new, xstrings, comp):
+def cli(details, compressor, threshold, size, exclude, new, removed, xstrings, comp):
     """
     Compare a Dalvik based file against another file or a whole directory.
 
@@ -153,12 +108,12 @@ def cli(display, compressor, threshold, size, exclude, new, xstrings, comp):
                 dx2 = load_analysis(real_filename)
                 if dx2 is None:
                     click.echo(click.style("The file '{}' is not an APK or DEX. Skipping.".format(real_filename), fg='red'), err=True)
-                check_one_file(dx1, dx2, FS, threshold, compressor, display, xstrings, new)
+                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, removed)
     else:
         dx2 = load_analysis(comp[1])
         if dx2 is None:
             raise click.BadParameter("The supplied file '{}' is not an APK or a DEX file!".format(comp[1]))
-        check_one_file(dx1, dx2, FS, threshold, compressor, display, xstrings, new)
+        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, removed)
 
 
 if __name__ == "__main__":

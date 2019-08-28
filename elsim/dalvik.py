@@ -526,7 +526,8 @@ class CheckSumString:
         self.buff = self.m1.el
 
     def get_buff(self):
-        return self.buff
+        # FIXME: the checksumstring thing should have a better structure!
+        return self.buff.encode('UTF-8')
 
 
 class ProxyDalvik:
@@ -555,20 +556,13 @@ class ProxyDalvikMethod:
         yield from self.el.mx.basic_blocks.get()
 
 
-class ProxyDalvikStringMultiple:
+class ProxyDalvikString:
     def __init__(self, vmx):
         self.vmx = vmx
 
     def __iter__(self):
         for i in self.vmx.get_strings():
             yield i.get_value()
-
-class ProxyDalvikStringOne:
-    def __init__(self, vmx):
-        self.vmx = vmx
-
-    def __iter__(self):
-        yield ''.join([x.get_value() for x in self.vmx.get_strings()])
 
 
 def LCS(X, Y):

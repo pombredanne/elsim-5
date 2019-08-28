@@ -472,6 +472,12 @@ class Elsim:
         return [x for x in self.filters[attr]]
 
     def show_element(self, i, details=True):
+        """
+        Show the element and similar ones.
+        If details is False, do not show similar items.
+        This can be useful if there are no similar ones, i.e. elements are identical, new or deleted.
+
+        """
         print("\t", i.get_info())
 
         if not details:
@@ -513,6 +519,19 @@ class Elsim:
 
         The similarity value is calculated as the average similarity
         between all filtered elements.
+        The default is to count new and deleted items as "not similar".
+        This behaviour can be changed by setting the according flags.
+        Here is an example:
+
+            s1 = {a, b, c}
+            s2 = {a, c', d}
+
+        In this example, element a is identical, c is similar (similarity = 0.75), b is deleted and d is new.
+        The similarity score with new and deleted items would be: 1/4 * (1 + 0.75 + 0 + 0) = 43.75%.
+        If neither new and deleted items would be counted: 1/2 * (1 + 0.75) = 87.5%
+        If only new items would be counted: 1/3 * (1 + 0.75 + 0) = 58.33%
+
+        Skipped Items are never investigated.
 
         :param bool new: Should new elements regarded as beeing dissimilar
         :param bool deleted: Should deleted elements regarded as beeing dissimilar
@@ -541,19 +560,62 @@ class Elsim:
         # Then we take the arithmetic mean and return it as percentage
         return sum([1.0 - i for i in values]) / max(len(values), 1) * 100
 
-    def show(self):
+    def show(self, new=True, deleted=True, details=False):
         """
         Print information about the elements to stdout
+
+        If new or deleted is set, it will print a '**' after the element count to
+        indicate that these values are not used for the calculation of the similarity score.
+
+        :param bool new: Should new elements regarded as beeing dissimilar (passed to get_similarity_value)
+        :param bool deleted: Should deleted elements regarded as beeing dissimilar (passed to get_similarity_value)
+        :param bool details: Print all elements for the categories
         """
+        ik = len(self.get_identical_elements())
+        s = len(self.get_similar_elements())
+        n = len(self.get_new_elements())
+        d = len(self.get_deleted_elements())
+        sk = len(self.get_skipped_elements())
+
+        # get the length of the digits and at least 3 digits
+        max_digits = max(max(map(len, map(str, [ik, s, n, d, sk]))), 3)
+
         print("Compression:   {}".format(self.compressor.name))
-        print("Elements:")
-        print("    IDENTICAL: {}".format(len(self.get_identical_elements())))
-        print("    SIMILAR:   {}".format(len(self.get_similar_elements())))
-        print("    NEW:       {}".format(len(self.get_new_elements())))
-        print("    DELETED:   {}".format(len(self.get_deleted_elements())))
-        print("    SKIPPED:   {}".format(len(self.get_skipped_elements())))
+        print("    IDENTICAL: {:>{width}}".format(ik, width=max_digits))
+        print("    SIMILAR:   {:>{width}}".format(s, width=max_digits))
+        print("    NEW:       {:>{width}}{}".format(n, " **" if not new else "", width=max_digits))
+        print("    DELETED:   {:>{width}}{}".format(d, " **" if not deleted else "", width=max_digits))
+        print("    SKIPPED:   {:>{width}}".format(sk, width=max_digits))
         print("")
-        print("Similarity:    {: 3.4f}%".format(self.get_similarity_value()))
+        print("Similarity:    {:>{width}.4f}%".format(self.get_similarity_value(new, deleted), width=max_digits+5))
+
+        if details:
+            print()
+
+            if s > 0:
+                print("SIMILAR elements:")
+                for i in self.get_similar_elements():
+                    self.show_element(i)
+
+            if ik > 0:
+                print("IDENTICAL elements:")
+                for i in self.get_identical_elements():
+                    self.show_element(i, False)
+
+            if n > 0:
+                print("NEW elements:")
+                for i in self.get_new_elements():
+                    self.show_element(i, False)
+
+            if d > 0:
+                print("DELETED elements:")
+                for i in self.get_deleted_elements():
+                    self.show_element(i, False)
+
+            if sk > 0:
+                print("SKIPPED elements:")
+                for i in self.get_skipped_elements():
+                    self.show_element(i, False)
 
 
 ADDED_ELEMENTS = "added elements"
