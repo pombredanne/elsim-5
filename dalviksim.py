@@ -4,10 +4,19 @@ import click
 from androguard.core import androconf
 from androguard.misc import AnalyzeAPK, AnalyzeDex
 
-from elsim import ELSIM_VERSION, Elsim
+from elsim import ELSIM_VERSION, Elsim, Eldiff
 from elsim.similarity import Compress
-from elsim.dalvik import ProxyDalvikString, FILTERS_DALVIK_SIM_STRING
-from elsim.dalvik import ProxyDalvik, FILTERS_DALVIK_SIM
+from elsim.dalvik import (
+        ProxyDalvikString,
+        FILTERS_DALVIK_SIM_STRING,
+        ProxyDalvik,
+        FILTERS_DALVIK_SIM,
+        ProxyDalvikMethod,
+        FILTERS_DALVIK_BB,
+        ProxyDalvikBasicBlock,
+        FILTERS_DALVIK_DIFF_BB,
+        DiffDalvikMethod,
+        )
 import elsim
 
 
@@ -23,7 +32,7 @@ def load_analysis(filename):
     return None
 
 
-def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted):
+def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted, diff):
     """
     Show similarities between two dalvik containers
 
@@ -35,6 +44,7 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
     :param bool view_strings: also calculate the similarities based on strings
     :param bool new: should the similarity score include new elements
     :param bool deleted: should the similarity score include deleted elements
+    :param bool diff: display the difference
     """
     el = Elsim(ProxyDalvik(dx1), ProxyDalvik(dx2), FS, threshold, compressor)
     print("Calculating similarity based on methods")
@@ -45,10 +55,32 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
         print("Calculating similarity based on strings")
         els.show(new, deleted, details)
 
+    if diff:
+        e1 = elsim.split_elements(el, el.get_similar_elements())
+        for i in e1:
+            j = e1[i]
+            elb = Elsim(ProxyDalvikMethod(i), ProxyDalvikMethod(j), FILTERS_DALVIK_BB, threshold, compressor)
+            eld = Eldiff(ProxyDalvikBasicBlock(elb), FILTERS_DALVIK_DIFF_BB)
+
+            ddm = DiffDalvikMethod(i, j, elb, eld)
+            ddm.show()
+
+        if details:
+            print("NEW METHODS")
+            enew = el.get_new_elements()
+            for i in enew:
+                el.show_element(i, False)
+
+            print("DELETED METHODS")
+            edel = el.get_deleted_elements()
+            for i in edel:
+                el.show_element(i)
+
 
 @click.command()
 @click.version_option(ELSIM_VERSION)
 @click.option("-d", "--details", is_flag=True, help="display detailed information about the changes")
+@click.option("--diff", is_flag=True, help="Show the difference between the files")
 @click.option("-c", "--compressor", default="SNAPPY", type=click.Choice([x.name for x in Compress]),
         show_default=True,
         show_choices=True,
@@ -62,7 +94,7 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
 @click.option("--deleted/--no-deleted", help="calculate similarity score by using deleted elementes", show_default=True)
 @click.option("-x", "--xstrings", is_flag=True, help="display similarites of strings")
 @click.argument('comp', nargs=2)
-def cli(details, compressor, threshold, size, exclude, new, deleted, xstrings, comp):
+def cli(details, diff, compressor, threshold, size, exclude, new, deleted, xstrings, comp):
     """
     Compare a Dalvik based file against another file or a whole directory.
 
@@ -93,12 +125,12 @@ def cli(details, compressor, threshold, size, exclude, new, deleted, xstrings, c
                 dx2 = load_analysis(real_filename)
                 if dx2 is None:
                     click.echo(click.style("The file '{}' is not an APK or DEX. Skipping.".format(real_filename), fg='red'), err=True)
-                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted)
+                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted, diff)
     else:
         dx2 = load_analysis(comp[1])
         if dx2 is None:
             raise click.BadParameter("The supplied file '{}' is not an APK or a DEX file!".format(comp[1]))
-        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted)
+        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted, diff)
 
 
 if __name__ == "__main__":

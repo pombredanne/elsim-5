@@ -158,6 +158,7 @@ class CheckSumBB:
             self.buff += dvm.clean_name_instruction(i)
             self.buff += dvm.static_operand_instruction(i)
 
+        self.buff = self.buff.encode('UTF-8')
         self.hash = mmh3.hash128(self.buff)
 
     def get_buff(self):

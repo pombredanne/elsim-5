@@ -57,6 +57,8 @@ def debug(x):
 # This will be applied to every element in the iterable.
 # from an element, we construct an Element...
 # Arguments to this function: the element itself, the iterable (Proxy Object)
+# The resulting object must have a function set_checksum which expect the CheckSum object and a property hash
+# You should also implement a meaningful __str__ method.
 FILTER_ELEMENT_METH = "FILTER_ELEMENT_METH"
 # Object to checksum an element
 # Next this Object is created, which might be used
@@ -81,7 +83,6 @@ HASHSUM = "hashsum"
 SIMILAR_ELEMENTS = "similar_elements"
 HASHSUM_SIMILAR_ELEMENTS = "hash_similar_elements"
 NEW_ELEMENTS = "newelements"
-HASHSUM_NEW_ELEMENTS = "hash_new_elements"
 DELETED_ELEMENTS = "deletedelements"
 IDENTICAL_ELEMENTS = "identicalelements"
 SKIPPED_ELEMENTS = "skippedelements"
@@ -294,7 +295,6 @@ class Elsim:
             SKIPPED_ELEMENTS: [],  # contains all skipped elements from both iterables
 
             HASHSUM_SIMILAR_ELEMENTS: [],
-            HASHSUM_NEW_ELEMENTS: [],
             SIMILARITY_ELEMENTS: dict(),
             SIMILARITY_SORT_ELEMENTS: dict(),
             }
@@ -311,8 +311,11 @@ class Elsim:
         self.__init_index_elements(self.e1)
         self.__init_index_elements(self.e2)
 
+        # get all identical items and calculate similarity
         self._init_similarity()
+        # Get Most similar item(s) and deletd items
         self._init_sort_elements()
+        # Get new items
         self._init_new_elements()
 
     def __init_index_elements(self, iterable):
@@ -386,7 +389,7 @@ class Elsim:
 
     def _init_sort_elements(self):
         """
-        Now we threshold the similarity value and get the most similar item
+        Now we threshold the similarity value and get the most similar item(s)
         If there is no similar item with respect to the threhsold,
         we think this item got deleted.
 
@@ -395,17 +398,17 @@ class Elsim:
         deleted_elements = []
         for j in self.filters[SIMILAR_ELEMENTS]:
             sort_h = self.filters[BASE][FILTER_SORT_METH](j, self.filters[SIMILARITY_ELEMENTS][j], self.threshold)
+
+            # Store the similar Element(s)
             self.filters[SIMILARITY_SORT_ELEMENTS][j] = set(i[0] for i in sort_h)
 
             if sort_h == []:
+                # After thresholding, the element is not similar to anything
                 deleted_elements.append(j)
 
         for j in deleted_elements:
             self.filters[DELETED_ELEMENTS].append(j)
             self.filters[SIMILAR_ELEMENTS].remove(j)
-
-    def __checksort(self, x, y):
-        return y in self.filters[SIMILARITY_SORT_ELEMENTS][x]
 
     def _init_new_elements(self):
         """
@@ -414,23 +417,20 @@ class Elsim:
         We regard all items as new, if they are in the second iterable
         but do not have any connection from the first.
         """
-        # Check if some elements in the second file are totally new !
+        # Check if some elements in the second file are totally new
         for j in self.filters[ELEMENTS][self.e2]:
             # new elements can't be in similar elements
-            if j not in self.filters[SIMILAR_ELEMENTS]:
-                # new elements hashes can't be in first file
-                if j.hash not in self.filters[HASHSUM][self.e1]:
-                    ok = True
-                    # new elements can't be compared to another one
-                    for diff_element in self.filters[SIMILAR_ELEMENTS]:
-                        if self.__checksort(diff_element, j):
-                            ok = False
-                            break
+            # and hashes can't be in first file, i.e. unique to second file
+            if j not in self.filters[SIMILAR_ELEMENTS] and j.hash not in self.filters[HASHSUM][self.e1]:
+                is_new = True
+                # new elements can't be compared to another one
+                for diff_element in self.filters[SIMILAR_ELEMENTS]:
+                    if j in self.filters[SIMILARITY_SORT_ELEMENTS][diff_element]:
+                        is_new = False
+                        break
 
-                    if ok:
-                        if j.hash not in self.filters[HASHSUM_NEW_ELEMENTS]:
-                            self.filters[NEW_ELEMENTS].add(j)
-                            self.filters[HASHSUM_NEW_ELEMENTS].append(j.hash)
+                if is_new and j not in self.filters[NEW_ELEMENTS]:
+                    self.filters[NEW_ELEMENTS].add(j)
 
     def get_similar_elements(self):
         """
@@ -619,9 +619,9 @@ LINK_ELEMENTS = "link elements"
 DIFF = "diff"
 
 
-class Eldiff(object):
-    def __init__(self, elsim, F):
-        self.elsim = elsim
+class Eldiff:
+    def __init__(self, iterator, F):
+        self.iterator = iterator
         self.F = F
 
         self._init_filters()
@@ -638,7 +638,7 @@ class Eldiff(object):
         self.filters[LINK_ELEMENTS] = {}
 
     def _init_diff(self):
-        for i, j in self.elsim.get_elements():
+        for i, j in self.iterator:
             self.filters[ADDED_ELEMENTS][j] = []
             self.filters[DELETED_ELEMENTS][i] = []
 
