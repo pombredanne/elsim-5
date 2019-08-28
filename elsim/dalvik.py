@@ -89,7 +89,6 @@ FILTERS_DALVIK_BB = {
 }
 
 
-
 class CheckSumMeth:
     def __init__(self, m1, sim):
         """
@@ -166,146 +165,6 @@ class CheckSumBB:
 
     def get_hash(self):
         return self.hash
-
-
-DIFF_INS_TAG = {
-    "ORIG": 0,
-    "ADD": 1,
-    "REMOVE": 2
-}
-
-
-class DiffBB:
-    def __init__(self, bb1, bb2, info):
-        self.bb1 = bb1
-        self.bb2 = bb2
-        self.info = info
-
-        self.start = self.bb1.start
-        self.end = self.bb1.end
-        self.name = self.bb1.name
-
-        self.di = None
-        self.ins = []
-
-    def diff_ins(self, di):
-        self.di = di
-
-        off_add = {}
-        off_rm = {}
-        for i in self.di.add_ins:
-            off_add[i[0]] = i
-
-        for i in self.di.remove_ins:
-            off_rm[i[0]] = i
-
-        nb = 0
-        for i in self.bb1.ins:
-            ok = False
-            if nb in off_add:
-                debug("%d ADD %s %s" % (
-                    nb, off_add[nb][2].get_name(), off_add[nb][2].get_output()))
-                self.ins.append(off_add[nb][2])
-                setattr(off_add[nb][2], "diff_tag", DIFF_INS_TAG["ADD"])
-                del off_add[nb]
-
-            if nb in off_rm:
-                debug("%d RM %s %s" %
-                      (nb, off_rm[nb][2].get_name(), off_rm[nb][2].get_output()))
-                self.ins.append(off_rm[nb][2])
-                setattr(off_rm[nb][2], "diff_tag", DIFF_INS_TAG["REMOVE"])
-                del off_rm[nb]
-                ok = True
-
-            if ok == False:
-                self.ins.append(i)
-                debug("%d %s %s" % (nb, i.get_name(), i.get_output()))
-                setattr(i, "diff_tag", DIFF_INS_TAG["ORIG"])
-
-            nb += 1
-
-        nbmax = nb
-        if off_add != {}:
-            nbmax = sorted(off_add)[-1]
-        if off_rm != {}:
-            nbmax = max(nbmax, sorted(off_rm)[-1])
-
-        while nb <= nbmax:
-            if nb in off_add:
-                debug("%d ADD %s %s" % (
-                    nb, off_add[nb][2].get_name(), off_add[nb][2].get_output()))
-                self.ins.append(off_add[nb][2])
-                setattr(off_add[nb][2], "diff_tag", DIFF_INS_TAG["ADD"])
-                del off_add[nb]
-
-            if nb in off_rm:
-                debug("%d RM %s %s" %
-                      (nb, off_rm[nb][2].get_name(), off_rm[nb][2].get_output()))
-                self.ins.append(off_rm[nb][2])
-                setattr(off_rm[nb][2], "diff_tag", DIFF_INS_TAG["REMOVE"])
-                del off_rm[nb]
-
-            nb += 1
-
-    def set_childs(self, abb):
-        self.childs = self.bb1.childs
-
-        for i in self.ins:
-            if i == self.bb2.ins[-1]:
-                childs = []
-                for c in self.bb2.childs:
-                    if c[2].name in abb:
-                        debug("SET %s %s" % (c[2], abb[c[2].name]))
-                        childs.append((c[0], c[1], abb[c[2].name]))
-                    else:
-                        debug("SET ORIG %s" % str(c))
-                        childs.append(c)
-
-                i.childs = childs
-
-    def show(self):
-        print("\tADD INSTRUCTIONS :")
-        for i in self.di.add_ins:
-            print("\t\t", i[0], i[1], i[2].get_name(), i[2].get_output())
-
-        print("\tREMOVE INSTRUCTIONS :")
-        for i in self.di.remove_ins:
-            print("\t\t", i[0], i[1], i[2].get_name(), i[2].get_output())
-
-
-class NewBB:
-    def __init__(self, bb):
-        self.bb = bb
-
-        self.start = self.bb.start
-        self.end = self.bb.end
-        self.name = self.bb.name
-        self.ins = self.bb.ins
-
-    def set_childs(self, abb):
-        childs = []
-        for c in self.bb.childs:
-            if c[2].name in abb:
-                debug("SET %s %s " % (c[2], abb[c[2].name]))
-                childs.append((c[0], c[1], abb[c[2].name]))
-            else:
-                debug("SET ORIG %s" % str(c))
-                childs.append(c)
-
-        self.childs = childs
-
-
-class DiffINS:
-    def __init__(self, add_ins, remove_ins):
-        self.add_ins = add_ins
-        self.remove_ins = remove_ins
-
-
-DIFF_BB_TAG = {
-    "ORIG": 0,
-    "DIFF": 1,
-    "NEW": 2
-}
 
 
 class Method:
@@ -504,8 +363,8 @@ class DiffBasicBlock:
     def __init__(self, x, y, added, deleted):
         self.basic_block_x = x
         self.basic_block_y = y
-        self.added = sorted(added, key=lambda x: x[1])
-        self.deleted = sorted(deleted, key=lambda x: x[1])
+        self.added = sorted(added, key=itemgetter(1))
+        self.deleted = sorted(deleted, key=itemgetter(1))
 
     def get_added_elements(self):
         for i in self.added:
