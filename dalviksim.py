@@ -31,7 +31,7 @@ from androguard.core import androconf
 from androguard.misc import AnalyzeAPK, AnalyzeDex
 
 
-def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, removed):
+def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted):
     """
     Show similarities between two dalvik containers
 
@@ -42,16 +42,16 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
     :param bool details: should extra information be shown
     :param bool view_strings: also calculate the similarities based on strings
     :param bool new: should the similarity score include new elements
-    :param bool removed: should the similarity score include deleted elements
+    :param bool deleted: should the similarity score include deleted elements
     """
     el = elsim.Elsim(ProxyDalvik(dx1), ProxyDalvik(dx2), FS, threshold, compressor)
     print("Calculating similarity based on methods")
-    el.show(new, removed, details)
+    el.show(new, deleted, details)
 
     if view_strings:
         els = elsim.Elsim(ProxyDalvikString(dx1), ProxyDalvikString(dx2), FILTERS_DALVIK_SIM_STRING, threshold, compressor)
         print("Calculating similarity based on strings")
-        els.show(new, removed, details)
+        els.show(new, deleted, details)
 
 
 def load_analysis(filename):
@@ -77,10 +77,10 @@ def load_analysis(filename):
 @click.option("-s", "--size", type=int, help='exclude specific method below the specific size (specify the minimum size of a method to be used (it is the length (bytes) of the dalvik method)')
 @click.option("-e", "--exclude", type=str, help="exlude class names (python regex string)")
 @click.option("--new/--no-new", help="calculate similarity score by including new elements", show_default=True)
-@click.option("--removed/--no-removed", help="calculate similarity score by using removed elementes", show_default=True)
+@click.option("--deleted/--no-deleted", help="calculate similarity score by using deleted elementes", show_default=True)
 @click.option("-x", "--xstrings", is_flag=True, help="display similarites of strings")
 @click.argument('comp', nargs=2)
-def cli(details, compressor, threshold, size, exclude, new, removed, xstrings, comp):
+def cli(details, compressor, threshold, size, exclude, new, deleted, xstrings, comp):
     """
     Compare a Dalvik based file against another file or a whole directory.
 
@@ -108,12 +108,12 @@ def cli(details, compressor, threshold, size, exclude, new, removed, xstrings, c
                 dx2 = load_analysis(real_filename)
                 if dx2 is None:
                     click.echo(click.style("The file '{}' is not an APK or DEX. Skipping.".format(real_filename), fg='red'), err=True)
-                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, removed)
+                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted)
     else:
         dx2 = load_analysis(comp[1])
         if dx2 is None:
             raise click.BadParameter("The supplied file '{}' is not an APK or a DEX file!".format(comp[1]))
-        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, removed)
+        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted)
 
 
 if __name__ == "__main__":

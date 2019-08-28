@@ -19,13 +19,13 @@ This module encapsultes dalvik code for the use with elsim
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
-import mmh3
 import re
 from operator import itemgetter
+import mmh3
 
 from androguard.core.bytecodes import dvm
 
-from elsim import debug, get_debug
+from elsim import debug
 import elsim
 from elsim.filters import filter_sort_meth_basic, FilterNone
 
@@ -35,15 +35,16 @@ DEFAULT_SIGNATURE = 'L0_4'
 
 
 class FilterSkip:
-    def __init__(self, size, regexp):
+    def __init__(self, size=1, regexp=None):
+        # Minimal size of one should always be the case. We can not compare to empty strings.
         self.size = size
         self.regexp = regexp
 
     def skip(self, m):
-        if self.size is not None and m.get_length() < self.size:
+        if m.get_length() < self.size:
             return True
 
-        if self.regexp is not None and re.match(self.regexp, m.m.get_class_name()) != None:
+        if self.regexp and re.match(self.regexp, m.m.get_class_name()):
             return True
 
         return False
@@ -52,10 +53,12 @@ class FilterSkip:
         self.regexp = e
 
     def set_size(self, e):
-        if e != None:
-            self.size = int(e)
-        else:
-            self.size = e
+        """
+        :param int e: the minimal size:
+        """
+        if e < 0:
+            raise ValueError("size must be positive integer")
+        self.size = e
 
 
 FILTERS_DALVIK_SIM = {
@@ -64,7 +67,7 @@ FILTERS_DALVIK_SIM = {
     elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumMeth(element, sim),
     elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_signature(), e2.checksum.get_signature()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
-    elsim.FILTER_SKIPPED_METH: FilterSkip(None, None),
+    elsim.FILTER_SKIPPED_METH: FilterSkip(),
 }
 
 FILTERS_DALVIK_SIM_STRING = {
@@ -89,27 +92,45 @@ FILTERS_DALVIK_BB = {
 
 class CheckSumMeth:
     def __init__(self, m1, sim):
+        """
+        :param Method m1:
+        :param elsim.similarity.Similarity sim:
+        """
         self.m1 = m1
         self.sim = sim
+
         self.buff = ""
-        self.entropy = 0.0
         self.signature = None
+        self.signature_entropy = None
 
-        code = m1.m.get_code()
-        if code != None:
-            bc = code.get_bc()
+        # This essentially creates a long string with
+        # all the instructions as names plus their operands in
+        # a human readable form
+        for i in m1.m.get_instructions():
+            self.buff += dvm.clean_name_instruction(i)
+            self.buff += dvm.static_operand_instruction(i)
 
-            for i in bc.get_instructions():
-                self.buff += dvm.clean_name_instruction(i)
-                self.buff += dvm.static_operand_instruction(i)
+        self.buff = self.buff.encode('UTF-8')
+        self.entropy = sim.entropy(self.buff)
 
-            self.entropy = sim.entropy(self.buff)
+        # FIXME: as long as we dont have Signature back online, we use the bytecode directly
+        if self.m1.m.get_code():
+            self.signature = self.m1.m.get_code().get_bc().get_insn()
+            self.signature_entropy = self.sim.entropy(self.signature)
+        else:
+            self.signature = b''
+            self.signature_entropy = 0.0
 
     def get_signature(self):
+        """
+        The Signature proposed here is an Android Variant of
+        Cesare and Xiang (2010): Classification of Malware Using Structured Control Flow
+        
+        You can also read about this in http://phrack.org/issues/68/15.html
+        """
         if self.signature == None:
             # FIXME
-            self.signature = self.m1.vmx.get_method_signature(
-                self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
+            self.signature = self.m1.vmx.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
             self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature
@@ -117,8 +138,7 @@ class CheckSumMeth:
     def get_signature_entropy(self):
         if self.signature == None:
             # FIXME
-            self.signature = self.m1.vmx.get_method_signature(
-                self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
+            self.signature = self.m1.vmx.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
             self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature_entropy
@@ -288,7 +308,16 @@ DIFF_BB_TAG = {
 
 
 class Method:
+    """
+    This object is used to calculate the similarity to another EncodedMethod
+    """
+    # FIXME: this thing contains so much stuff from the diffing thing...
     def __init__(self, vmx, m):
+        """
+
+        :param androguard.core.analysis.analysis.Analysis vmx:
+        :param androguard.core.bytecodes.dvm.EncodedMethod m:
+        """
         self.m = m
         self.vmx = vmx
         self.mx = vmx.get_method(m)
@@ -302,6 +331,7 @@ class Method:
         return "%s %s %s %d" % (self.m.get_class_name(), self.m.get_name(), self.m.get_descriptor(), self.m.get_length())
 
     def get_length(self):
+        """Returns the length of the code of the method"""
         return self.m.get_length()
 
     def set_checksum(self, fm):
@@ -438,14 +468,6 @@ class Method:
         l = sorted(l, key=lambda x: x.start)
         self.bbs = l
 
-    def getsha256(self):
-        return self.sha256
-
-    def get_length(self):
-        if self.m.get_code() is None:
-            return 0
-        return self.m.get_code().get_length()
-
     def show(self, details=False, exclude=[]):
         print(self.m.get_class_name(), self.m.get_name(),
               self.m.get_descriptor(), end=' ')
@@ -465,18 +487,6 @@ class Method:
         print("\tNEW BASIC BLOCKS :")
         for b in self.nbb:
             print("\t\t", self.nbb[b].name)
-
-    def show2(self, details=False):
-        print(self.m.get_class_name(), self.m.get_name(),
-              self.m.get_descriptor(), end=' ')
-        print(self.get_length())
-
-        for i in self.sort_h:
-            print("\t", i[0].m.get_class_name(),
-                  i[0].m.get_name(), i[0].m.get_descriptor(), i[1])
-
-        if details:
-            bytecode.PrettyShow1(self.mx.basic_blocks.get())
 
 
 class BasicBlock:
@@ -544,7 +554,9 @@ class ProxyDalvik:
         """
         yield many EncodedMethod
         """
-        yield from [x.get_method() for x in self.vmx.get_methods() if not x.is_external()]
+        for x in self.vmx.get_methods():
+            if not x.is_external():
+                yield x.get_method()
 
 
 class ProxyDalvikMethod:
