@@ -630,8 +630,7 @@ class Eldiff:
     def _init_filters(self):
         self.filters = {}
 
-        self.filters[BASE] = {}
-        self.filters[BASE].update(self.F)
+        self.filters[BASE] = self.F
         self.filters[ELEMENTS] = {}
         self.filters[ADDED_ELEMENTS] = {}
         self.filters[DELETED_ELEMENTS] = {}
