@@ -312,7 +312,6 @@ class Method:
     """
     This object is used to calculate the similarity to another EncodedMethod
     """
-    # FIXME: this thing contains so much stuff from the diffing thing...
     def __init__(self, vmx, m):
         """
 
@@ -341,153 +340,6 @@ class Method:
     @property
     def hash(self):
         return self.__hash
-
-    def diff(self, func_sim_bb, func_diff_ins):
-        if self.sort_h == []:
-            self.dbb = {}
-            self.nbb = {}
-            return
-
-        bb1 = self.bb
-
-        # Dict for diff basic blocks
-        # vm1 basic block : vm2 basic blocks -> value (0.0 to 1.0)
-        diff_bb = {}
-
-        # List to get directly all diff basic blocks
-        direct_diff_bb = []
-
-        # Dict for new basic blocks
-        new_bb = {}
-
-        # Reverse Dict with matches diff basic blocks
-        associated_bb = {}
-
-        for b1 in bb1:
-            diff_bb[bb1[b1]] = {}
-
-            debug("%s 0x%x" % (b1, bb1[b1].basic_block.end))
-            for i in self.sort_h:
-                bb2 = i[0].bb
-                b_z = diff_bb[bb1[b1]]
-
-                bb2hash = i[0].bb_sha256
-
-                # If b1 is in bb2:
-                # we can have one or more identical basic blocks to b1, we must add them
-                if bb1[b1].get_hash() in bb2hash:
-                    for equal_bb in bb2hash[bb1[b1].get_hash()]:
-                        b_z[equal_bb.basic_block.name] = 0.0
-
-                # If b1 is not in bb2:
-                    # we must check similarities between all bb2
-                else:
-                    for b2 in bb2:
-                        b_z[b2] = func_sim_bb(bb1[b1], bb2[b2], self.sim)
-
-                sorted_bb = sorted(b_z.items(), key=itemgetter(1))
-
-                debug("\t\t%s" % sorted_bb[:2])
-
-                for new_diff in sorted_bb:
-                    associated_bb[new_diff[0]] = bb1[b1].basic_block
-
-                    if new_diff[1] == 0.0:
-                        direct_diff_bb.append(new_diff[0])
-
-                if sorted_bb[0][1] != 0.0:
-                    diff_bb[bb1[b1]] = (bb2[sorted_bb[0][0]], sorted_bb[0][1])
-                    direct_diff_bb.append(sorted_bb[0][0])
-                else:
-                    del diff_bb[bb1[b1]]
-
-        for i in self.sort_h:
-            bb2 = i[0].bb
-            for b2 in bb2:
-                if b2 not in direct_diff_bb:
-                    new_bb[b2] = bb2[b2]
-
-        dbb = {}
-        nbb = {}
-        # Add all different basic blocks
-        for d in diff_bb:
-            dbb[d.basic_block.name] = DiffBB(
-                d.basic_block, diff_bb[d][0].basic_block, diff_bb[d])
-
-        # Add all new basic blocks
-        for n in new_bb:
-            nbb[new_bb[n].basic_block] = NewBB(new_bb[n].basic_block)
-            if n in associated_bb:
-                del associated_bb[n]
-
-        self.dbb = dbb
-        self.nbb = nbb
-
-        # Found diff instructions
-        for d in dbb:
-            func_diff_ins(dbb[d], self.sim)
-
-        # Set new childs for diff basic blocks
-            # The instructions will be tag with a new flag "childs"
-        for d in dbb:
-            dbb[d].set_childs(associated_bb)
-
-        # Set new childs for new basic blocks
-        for d in nbb:
-            nbb[d].set_childs(associated_bb)
-
-        # Create and tag all (orig/diff/new) basic blocks
-        self.create_bbs()
-
-    def create_bbs(self):
-        dbb = self.dbb
-        nbb = self.nbb
-
-        # For same block:
-        # tag = 0
-        # For diff block:
-        # tag = 1
-        # For new block:
-        # tag = 2
-        l = []
-        for bb in self.mx.basic_blocks.get():
-            if bb.name not in dbb:
-                # add the original basic block
-                bb.bb_tag = DIFF_BB_TAG["ORIG"]
-                l.append(bb)
-            else:
-                # add the diff basic block
-                dbb[bb.name].bb_tag = DIFF_BB_TAG["DIFF"]
-                l.append(dbb[bb.name])
-
-        for i in nbb:
-            # add the new basic block
-            nbb[i].bb_tag = DIFF_BB_TAG["NEW"]
-            l.append(nbb[i])
-
-        # Sorted basic blocks by addr (orig, new, diff)
-        l = sorted(l, key=lambda x: x.start)
-        self.bbs = l
-
-    def show(self, details=False, exclude=[]):
-        print(self.m.get_class_name(), self.m.get_name(),
-              self.m.get_descriptor(), end=' ')
-        print("with", end=' ')
-
-        for i in self.sort_h:
-            print(i[0].m.get_class_name(), i[0].m.get_name(),
-                  i[0].m.get_descriptor(), i[1])
-
-        print("\tDIFF BASIC BLOCKS :")
-        for d in self.dbb:
-            print("\t\t", self.dbb[d].bb1.name, " --->",
-                  self.dbb[d].bb2.name, ":", self.dbb[d].info[1])
-            if details:
-                self.dbb[d].show()
-
-        print("\tNEW BASIC BLOCKS :")
-        for b in self.nbb:
-            print("\t\t", self.nbb[b].name)
 
 
 class BasicBlock:
@@ -565,6 +417,9 @@ class ProxyDalvik:
 class ProxyDalvikMethod:
     """A Proxy for BasicBlocks"""
     def __init__(self, el):
+        """
+        :param Method el:
+        """
         self.el = el
 
     def __iter__(self):
@@ -708,6 +563,10 @@ FILTERS_DALVIK_DIFF_BB = {
 
 
 class ProxyDalvikBasicBlock:
+    """
+    This is actually a proxy for a Elsim object
+    and is given to the Eldiff object
+    """
     def __init__(self, esim):
         self.esim = esim
 
