@@ -83,8 +83,9 @@ class DalvikElsign:
         print(buff)
         methsim = buff["METHSIM"]
 
-        self.meth_elsign.set_distance(methsim["DISTANCE"])
-        self.meth_elsign.set_method(methsim["METHOD"])
+        # FIXME: set_distance and set_method require a single byte now.
+        self.meth_elsign.set_distance(methsim["DISTANCE"].encode('ascii'))
+        self.meth_elsign.set_method(methsim["METHOD"].encode('ascii'))
         self.meth_elsign.set_weight(methsim["WEIGHTS"])
 
         # NCD
@@ -97,8 +98,8 @@ class DalvikElsign:
     ################ CLASS ################
         classsim = buff["CLASSSIM"]
 
-        self.class_elsign.set_distance(classsim["DISTANCE"])
-        self.class_elsign.set_method(classsim["METHOD"])
+        self.class_elsign.set_distance(classsim["DISTANCE"].encode('ascii'))
+        self.class_elsign.set_method(classsim["METHOD"].encode('ascii'))
         # [ 2.0, 1.2, 0.5, 0.1, 0.6 ] )
         self.class_elsign.set_weight(classsim["WEIGHTS"])
         #self.class_elsign.set_cut_element( 1 )
@@ -132,6 +133,7 @@ class DalvikElsign:
     def set_debug(self, debug):
         self.debug = debug
         self.meth_elsign.set_debug_log(self.debug)
+        self.class_elsign.set_debug_log(self.debug)
 
     def load_meths(self, vm, vmx):
         if self.debug:

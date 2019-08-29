@@ -879,7 +879,7 @@ static PyObject *Elsign_set_distance(sign_ElsignObject *self, PyObject *args)
     if (self == NULL)
         return NULL;
 
-    if (!PyArg_ParseTuple( args, "C", &dist))
+    if (!PyArg_ParseTuple( args, "c", &dist))
         return NULL;
 
     self->s->set_distance( dist );
@@ -893,7 +893,7 @@ static PyObject *Elsign_set_method(sign_ElsignObject *self, PyObject *args)
     if (self == NULL)
         return NULL;
 
-    if (!PyArg_ParseTuple( args, "C", &method))
+    if (!PyArg_ParseTuple( args, "c", &method))
         return NULL;
 
     self->s->set_method( method );
