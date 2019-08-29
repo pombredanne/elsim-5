@@ -211,7 +211,7 @@ class Elsign {
         Elsign();
         int set_debug_log(int value);
         int set_weight(double *w, int size);
-        int set_distance(char c);
+        void set_distance(char c);
         int set_method(char c);
         void set_npass(int value);
 

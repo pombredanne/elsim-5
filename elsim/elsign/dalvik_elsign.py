@@ -83,22 +83,15 @@ class DalvikElsign:
         print(buff)
         methsim = buff["METHSIM"]
 
-        print("hello")
         self.meth_elsign.set_distance(methsim["DISTANCE"])
-        print("hello")
         self.meth_elsign.set_method(methsim["METHOD"])
-        print("hello")
         self.meth_elsign.set_weight(methsim["WEIGHTS"])
 
         # NCD
-        print("hello")
         self.meth_elsign.set_sim_method(0)
-        print("hello")
         self.meth_elsign.set_threshold_low(methsim["THRESHOLD_LOW"])
-        print("hello")
         self.meth_elsign.set_threshold_high(methsim["THRESHOLD_HIGH"])
         # SNAPPY
-        print("hello")
         self.meth_elsign.set_ncd_compression_algorithm(5)
 
     ################ CLASS ################
@@ -138,8 +131,7 @@ class DalvikElsign:
 
     def set_debug(self, debug):
         self.debug = debug
-        x = {True: 1, False: 0}
-        self.meth_elsign.set_debug_log(x[debug])
+        self.meth_elsign.set_debug_log(self.debug)
 
     def load_meths(self, vm, vmx):
         if self.debug:

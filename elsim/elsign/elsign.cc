@@ -100,14 +100,12 @@ int Elsign::set_weight(double *w, int size) {
     return 0;
 }
 
-int Elsign::set_distance(char c) {
+void Elsign::set_distance(char c) {
     cluster_dist = c;
 
     if (this->db.log) {
         printf("DIST = %c\n", cluster_dist);
     }
-
-    return 0;
 }
 
 int Elsign::set_method(char c) {
@@ -567,7 +565,7 @@ int Elsign::raz() {
     }
 
     /* Clear formula */
-    for (unsigned int ii = 0; ii < this->signatures.size(); ii++) {
+    for (size_t ii = 0; ii < this->signatures.size(); ii++) {
         MSignature *s = this->signatures[ii];
         s->formula->raz();
     }
@@ -1156,7 +1154,7 @@ static PyObject *Elsign_set_debug_log(sign_ElsignObject *self, PyObject *args)
     if (self == NULL)
         return NULL;
 
-    if (!PyArg_ParseTuple( args, "i", &value))
+    if (!PyArg_ParseTuple( args, "p", &value))
         return NULL;
 
     self->s->set_debug_log( value );
