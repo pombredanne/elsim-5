@@ -68,11 +68,7 @@ def FIX_FORMULA(x, z):
     return x
 
 
-class ElfElsign(object):
-    pass
-
-
-class DalvikElsign(object):
+class DalvikElsign:
     def __init__(self):
         self.debug = False
         self.meth_elsign = Elsign()
@@ -84,26 +80,32 @@ class DalvikElsign(object):
 
     def load_config(self, buff):
         ################ METHOD ################
+        print(buff)
         methsim = buff["METHSIM"]
 
-        self.meth_elsign.set_distance(str(methsim["DISTANCE"]))
-        self.meth_elsign.set_method(str(methsim["METHOD"]))
-        # [ 2.0, 1.2, 0.5, 0.1, 0.6 ] )
+        print("hello")
+        self.meth_elsign.set_distance(methsim["DISTANCE"])
+        print("hello")
+        self.meth_elsign.set_method(methsim["METHOD"])
+        print("hello")
         self.meth_elsign.set_weight(methsim["WEIGHTS"])
-        #self.meth_elsign.set_cut_element( 1 )
 
         # NCD
+        print("hello")
         self.meth_elsign.set_sim_method(0)
+        print("hello")
         self.meth_elsign.set_threshold_low(methsim["THRESHOLD_LOW"])
+        print("hello")
         self.meth_elsign.set_threshold_high(methsim["THRESHOLD_HIGH"])
         # SNAPPY
+        print("hello")
         self.meth_elsign.set_ncd_compression_algorithm(5)
 
     ################ CLASS ################
-        classsim = buff["METHSIM"]
+        classsim = buff["CLASSSIM"]
 
-        self.class_elsign.set_distance(str(classsim["DISTANCE"]))
-        self.class_elsign.set_method(str(classsim["METHOD"]))
+        self.class_elsign.set_distance(classsim["DISTANCE"])
+        self.class_elsign.set_method(classsim["METHOD"])
         # [ 2.0, 1.2, 0.5, 0.1, 0.6 ] )
         self.class_elsign.set_weight(classsim["WEIGHTS"])
         #self.class_elsign.set_cut_element( 1 )
@@ -265,9 +267,12 @@ class PublicSignature(object):
         self._load()
 
     def _load(self):
-        self.DE.load_config(json.loads(read(self.config)))
+        with open(self.config, 'r') as fp:
+            self.DE.load_config(json.load(fp))
 
-        buff = json.loads(read(self.database))
+        with open(self.database, 'r') as fp:
+            buff = json.load(fp)
+
         for i in buff:
             type_signature = None
             sub_signatures = []

@@ -797,6 +797,7 @@ void Elsign::add_result(unsigned int id, unsigned int idref, float value) {
     vector_results.push_back( t );
 }
 
+
 /* PYTHON BINDING */
 typedef struct {
     PyObject_HEAD;
@@ -835,262 +836,241 @@ static PyObject *Elsign_set_sim_method(sign_ElsignObject *self, PyObject *args)
 {
     int sim_method;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "i", &sim_method );
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "i", &sim_method ))
+        return NULL;
 
-        self->s->set_sim_method( sim_method );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_sim_method( sim_method );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_threshold_low(sign_ElsignObject *self, PyObject *args)
 {
     double threshold;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "d", &threshold);
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "d", &threshold))
+        return NULL;
 
-        self->s->set_threshold_low( threshold );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_threshold_low( threshold );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_threshold_high(sign_ElsignObject *self, PyObject *args)
 {
     double threshold;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "d", &threshold);
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "d", &threshold))
+        return NULL;
 
-        self->s->set_threshold_high( threshold );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_threshold_high( threshold );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_distance(sign_ElsignObject *self, PyObject *args)
 {
     char dist;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "c", &dist);
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "C", &dist))
+        return NULL;
 
-        self->s->set_distance( dist );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_distance( dist );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_method(sign_ElsignObject *self, PyObject *args)
 {
     char method;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "c", &method);
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "C", &method))
+        return NULL;
 
-        self->s->set_method( method );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_method( method );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_weight(sign_ElsignObject *self, PyObject *args)
 {
     PyObject *weight_list;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "O", &weight_list);
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "O", &weight_list))
+        return NULL;
 
-        if ( !PyList_Check( weight_list ) ) {
-
-            return PyLong_FromLong(-1);
-        }
-
-        int list_size = PyList_Size( weight_list );
-        double *datas = (double *)malloc( list_size * sizeof( double ) );
-
-        for(int i=0; i<list_size; i++) {
-            PyObject * pyvalue = 0;
-
-            pyvalue = PyList_GetItem(weight_list, i);
-            double value = PyFloat_AsDouble( pyvalue );
-
-            datas[ i ] = value;
-        }
-
-        self->s->set_weight( datas, list_size );
-
-        free( datas );
-        return PyLong_FromLong(0);
+    if ( !PyList_Check( weight_list ) ) {
+        return NULL;
     }
 
-    return PyLong_FromLong(-1);
+    int list_size = PyList_Size( weight_list );
+    double *datas = (double *)malloc( list_size * sizeof( double ) );
+
+    for(int i=0; i<list_size; i++) {
+        PyObject * pyvalue = 0;
+
+        pyvalue = PyList_GetItem(weight_list, i);
+        double value = PyFloat_AsDouble( pyvalue );
+
+        datas[ i ] = value;
+    }
+
+    self->s->set_weight( datas, list_size );
+
+    free( datas );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_npass(sign_ElsignObject *self, PyObject *args)
 {
     int npass;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "i", &npass );
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "i", &npass ))
+        return NULL;
 
-        self->s->set_npass( npass );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_npass( npass );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_ncd_compression_algorithm(sign_ElsignObject *self, PyObject *args)
 {
     int compression_algorithm;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "i", &compression_algorithm );
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "i", &compression_algorithm ))
+        return NULL;
 
-        self->s->set_ncd_compression_algorithm( compression_algorithm );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_ncd_compression_algorithm( compression_algorithm );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
 {
+    // FIXME: Use proper pybuffer here!
     char *name; unsigned int name_size;
     char *formula; unsigned int formula_size;
 
     PyObject *sub_list;
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
         
-        /* String/String/List */
+    /* String/String/List */
 
-        int ok = PyArg_ParseTuple( args, "s#s#O", &name, &name_size, &formula, &formula_size, &sub_list );
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "s#s#O", &name, &name_size, &formula, &formula_size, &sub_list ))
+        return NULL;
 
-        if ( !PyList_Check( sub_list ) ) {
-            return PyLong_FromLong(-1);
-        }
-
-        vector<Signature *> *sub_vector = new vector<Signature *>;
-
-        int list_size = PyList_Size( sub_list );
-        for(int i=0; i < list_size; i++) {
-            PyObject *sub_list_item = PyList_GetItem(sub_list, i);
-
-            PyObject *ets_list = PyList_GetItem(sub_list_item, 0);
-            PyObject *string_sign = PyList_GetItem(sub_list_item, 1);
-
-            vector<double> *ets_vector = new vector<double>;
-            int ets_list_size = PyList_Size( ets_list );
-            for(int j=0; j < ets_list_size; j++) {
-                PyObject * pyvalue = 0;
-
-                pyvalue = PyList_GetItem(ets_list, j);
-                double value = PyFloat_AsDouble( pyvalue );
-
-                ets_vector->push_back( value );
-            }
-
-            
-            unsigned int input_size = PyBytes_Size( string_sign );
-            char * input = PyBytes_AsString( string_sign );
-
-            Signature *value = self->s->create_sub_signature( input, input_size, ets_vector );
-
-            sub_vector->push_back( value );
-        }
-
-        int id = self->s->add_signature( name, name_size, formula, formula_size, sub_vector );
-        return PyLong_FromLong(id);
+    if ( !PyList_Check( sub_list ) ) {
+        return NULL;
     }
 
-    return PyLong_FromLong(-1);
-}
+    vector<Signature *> *sub_vector = new vector<Signature *>;
 
-static PyObject *Elsign_add_element(sign_ElsignObject *self, PyObject *args)
-{
-    char *input; size_t input_size;
-    PyObject *ets_list;
+    int list_size = PyList_Size( sub_list );
+    for(int i=0; i < list_size; i++) {
+        PyObject *sub_list_item = PyList_GetItem(sub_list, i);
 
-    if (self != NULL) {
-
-        int ok = PyArg_ParseTuple( args, "s#O", &input, &input_size, &ets_list );
-        if(!ok) return PyLong_FromLong(-1);
-
-        if ( !PyList_Check( ets_list ) ) {
-            return PyLong_FromLong(-1);
-        }
+        PyObject *ets_list = PyList_GetItem(sub_list_item, 0);
+        PyObject *string_sign = PyList_GetItem(sub_list_item, 1);
 
         vector<double> *ets_vector = new vector<double>;
-
-        int list_size = PyList_Size( ets_list );
-        for(int i=0; i<list_size; i++) {
+        int ets_list_size = PyList_Size( ets_list );
+        for(int j=0; j < ets_list_size; j++) {
             PyObject * pyvalue = 0;
 
-            pyvalue = PyList_GetItem(ets_list, i);
+            pyvalue = PyList_GetItem(ets_list, j);
             double value = PyFloat_AsDouble( pyvalue );
 
             ets_vector->push_back( value );
         }
 
-        int id = self->s->add_element( input, input_size, ets_vector );
-        return PyLong_FromLong(id);
+        
+        unsigned int input_size = PyBytes_Size( string_sign );
+        char * input = PyBytes_AsString( string_sign );
+
+        Signature *value = self->s->create_sub_signature( input, input_size, ets_vector );
+
+        sub_vector->push_back( value );
     }
 
-    return PyLong_FromLong(-1);
+    int id = self->s->add_signature( name, name_size, formula, formula_size, sub_vector );
+    return PyLong_FromLong(id);
+}
+
+static PyObject *Elsign_add_element(sign_ElsignObject *self, PyObject *args)
+{
+    // FIXME: use proper buffers here!
+    char *input; size_t input_size;
+    PyObject *ets_list;
+
+    if (self == NULL)
+        return NULL;
+
+    if (!PyArg_ParseTuple( args, "s#O", &input, &input_size, &ets_list ))
+        return NULL;
+
+    if ( !PyList_Check( ets_list ) ) {
+        return NULL;
+    }
+
+    vector<double> *ets_vector = new vector<double>;
+
+    int list_size = PyList_Size( ets_list );
+    for(size_t i=0; i<list_size; i++) {
+        PyObject * pyvalue = 0;
+
+        pyvalue = PyList_GetItem(ets_list, i);
+        double value = PyFloat_AsDouble( pyvalue );
+
+        ets_vector->push_back( value );
+    }
+
+    int id = self->s->add_element( input, input_size, ets_vector );
+    return PyLong_FromLong(id);
 }
 
 static PyObject *Elsign_check(sign_ElsignObject *self, PyObject *args)
 {
     PyObject *check_list = PyList_New( 0 );
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        self->s->check();
+    self->s->check();
 
-        const char *name = self->s->get_name_result();
+    const char *name = self->s->get_name_result();
 
-        if (name == NULL) {
-            PyList_Append( check_list, Py_None );
-        } else {
-            PyList_Append( check_list, PyBytes_FromString( name ) );
-        }
+    if (name == NULL) {
+        PyList_Append( check_list, Py_None );
+    } else {
+        PyList_Append( check_list, PyBytes_FromString( name ) );
+    }
 
-        for(unsigned int ii = 0; ii < self->s->vector_result_signature.size(); ii++) {
-            PyObject *icheck_list = PyList_New( 0 );
+    for(size_t ii = 0; ii < self->s->vector_result_signature.size(); ii++) {
+        PyObject *icheck_list = PyList_New( 0 );
 
-            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->link ) );
-            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id ) );
-            PyList_Append( icheck_list, PyFloat_FromDouble( self->s->vector_result_signature[ ii ]->value ) );
+        PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->link ) );
+        PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id ) );
+        PyList_Append( icheck_list, PyFloat_FromDouble( self->s->vector_result_signature[ ii ]->value ) );
 
-            PyList_Append( check_list, icheck_list );
-        }
-
-        return check_list;
+        PyList_Append( check_list, icheck_list );
     }
 
     return check_list;
@@ -1100,30 +1080,28 @@ static PyObject *Elsign_check_all(sign_ElsignObject *self, PyObject *args)
 {
     PyObject *check_list = PyList_New( 0 );
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        self->s->check_all();
+    self->s->check_all();
 
-        const char *name = self->s->get_name_result();
+    const char *name = self->s->get_name_result();
 
-        if (name == NULL) {
-            PyList_Append( check_list, Py_None );
-        } else {
-            PyList_Append( check_list, PyBytes_FromString( name ) );
-        }
+    if (name == NULL) {
+        PyList_Append( check_list, Py_None );
+    } else {
+        PyList_Append( check_list, PyBytes_FromString( name ) );
+    }
 
-        for(unsigned int ii = 0; ii < self->s->vector_result_signature.size(); ii++) {
-            PyObject *icheck_list = PyList_New( 0 );
+    for(size_t ii = 0; ii < self->s->vector_result_signature.size(); ii++) {
+        PyObject *icheck_list = PyList_New( 0 );
 
-            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->link ) );
-            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id ) );
-            PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id_cmp ) );
-            PyList_Append( icheck_list, PyFloat_FromDouble( self->s->vector_result_signature[ ii ]->value ) );
+        PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->link ) );
+        PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id ) );
+        PyList_Append( icheck_list, PyLong_FromLong( self->s->vector_result_signature[ ii ]->id_cmp ) );
+        PyList_Append( icheck_list, PyFloat_FromDouble( self->s->vector_result_signature[ ii ]->value ) );
 
-            PyList_Append( check_list, icheck_list );
-        }
-
-        return check_list;
+        PyList_Append( check_list, icheck_list );
     }
 
     return check_list;
@@ -1150,49 +1128,48 @@ static PyObject *Elsign_raz(sign_ElsignObject *self, PyObject *args)
         self->s->raz();
         return PyLong_FromLong( 0 );
     }
-    return PyLong_FromLong( -1 );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_raz_results(sign_ElsignObject *self, PyObject *args)
 {
     if (self != NULL) {
         self->s->raz_results();
-        return PyLong_FromLong( 0 );
+        Py_RETURN_NONE;
     }
-    return PyLong_FromLong( -1 );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_fix(sign_ElsignObject *self, PyObject *args)
 {
     if (self != NULL) {
         self->s->fix();
-        return PyLong_FromLong( 0 );
+        Py_RETURN_NONE;
     }
-    return PyLong_FromLong( -1 );
+    Py_RETURN_NONE;
 }
 
 static PyObject *Elsign_set_debug_log(sign_ElsignObject *self, PyObject *args)
 {
     int value;
 
-    if (self != NULL) {
+    if (self == NULL)
+        return NULL;
 
-        int ok = PyArg_ParseTuple( args, "i", &value);
-        if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "i", &value))
+        return NULL;
 
-        self->s->set_debug_log( value );
-        return PyLong_FromLong(0);
-    }
-
-    return PyLong_FromLong(-1);
+    self->s->set_debug_log( value );
+    Py_RETURN_NONE;
 }
 
 PyObject *entropy(PyObject *self, PyObject* args)
 {
+    // FIXME: use proper pybuffer
     char *input = NULL; size_t input_size = 0;
 
-    int ok = PyArg_ParseTuple( args, "s#", &input, &input_size );
-    if(!ok) return PyLong_FromLong(-1);
+    if (!PyArg_ParseTuple( args, "s#", &input, &input_size ))
+        return NULL;
 
     double value = entropy( input, input_size );
 

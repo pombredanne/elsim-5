@@ -37,7 +37,7 @@ from elsim.elsign import dalvik_elsign
 @click.option('-v', '--verbose', is_flag=True, help='display debug information')
 @click.argument('comp')
 def cli(comp, database, config, verbose):
-    s = dalvik_elsign.MSignature(database, config, verbose, ps=dalvik_elsign.PublicSignature)
+    s = dalvik_elsign.MSignature(database, config, verbose)
 
     def display(ret):
         click.echo("---->", ret[0])
