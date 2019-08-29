@@ -57,16 +57,9 @@ def debug(x):
 # This will be applied to every element in the iterable.
 # from an element, we construct an Element...
 # Arguments to this function: the element itself, the iterable (Proxy Object)
-# The resulting object must have a function set_checksum which expect the CheckSum object and a property hash
+# The resulting object must have the properties hash and checksum
 # You should also implement a meaningful __str__ method.
 FILTER_ELEMENT_METH = "FILTER_ELEMENT_METH"
-# Object to checksum an element
-# Next this Object is created, which might be used
-# to normalized the content of the Element
-# In general it is used to transform the content.
-# All Checksums and Similarities are calculated on this.
-# We call this now Checksum but it is actually contained in the Element itself
-FILTER_CHECKSUM_METH = "FILTER_CHECKSUM_METH"
 # function to calculate the similarity between two elements
 # Arguments: Similarity(), Element_1, Element_2
 FILTER_SIM_METH = "FILTER_SIM_METH"
@@ -156,7 +149,6 @@ class Elsim:
 
     * FILTER_ELEMENT_METH
     * FILTER_SKIPPED_METH
-    * FILTER_CHECKSUM_METH
     * FILTER_SIM_METH
     * FILTER_SORT_METH
 
@@ -329,7 +321,7 @@ class Elsim:
         for element in iterable:
             # Generate the Elements for storing the hashes in
             # This element must have the methods set_checksum, hash
-            e = self.__base[FILTER_ELEMENT_METH](element, iterable)
+            e = self.__base[FILTER_ELEMENT_METH](element, iterable, self.sim)
 
             # Check if the element shall be skipped
             if self.__base[FILTER_SKIPPED_METH].skip(e):
@@ -341,11 +333,6 @@ class Elsim:
 
             # Create the Checksum object, which might transform the content
             # and is used to calculate distances and checksum.
-            # FIXME: We could reduce this to just a single call of FILTER_ELEMENT_METH.
-            # I think the rationale behind this setup was, to be able to skip the creation
-            # of the possible expensive call to FILTER_CHECKSUM_METH...
-            e.set_checksum(self.__base[FILTER_CHECKSUM_METH](e, self.sim))
-
             # Hash the content and add the hash to our list of known hashes
             self.__hashes[iterable].append(e.hash)
 

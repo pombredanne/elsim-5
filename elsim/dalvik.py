@@ -62,27 +62,21 @@ class FilterSkip:
 
 
 FILTERS_DALVIK_SIM = {
-    # input element, iterator
-    elsim.FILTER_ELEMENT_METH: lambda element, iterator: Method(iterator.vmx, element),
-    elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumMeth(element, sim),
+    elsim.FILTER_ELEMENT_METH: lambda element, iterator, sim: Method(iterator.vmx, element, sim),
     elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_signature(), e2.checksum.get_signature()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterSkip(),
 }
 
 FILTERS_DALVIK_SIM_STRING = {
-        elsim.FILTER_ELEMENT_METH: lambda element, iterator: StringVM(element),
-        elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumString(element, sim),
+        elsim.FILTER_ELEMENT_METH: lambda element, iterator, sim: StringVM(element, sim),
         elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_buff(), e2.checksum.get_buff()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterNone,
 }
 
 FILTERS_DALVIK_BB = {
-    # input element, iterator
-    # FIXME: this might be iterator instead?
-    elsim.FILTER_ELEMENT_METH: lambda element, iterator: BasicBlock(element),
-    elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumBB(element, sim),
+    elsim.FILTER_ELEMENT_METH: lambda element, iterator, sim: BasicBlock(element, sim),
     elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_buff(), e2.checksum.get_buff()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterNone,
@@ -171,7 +165,7 @@ class Method:
     """
     This object is used to calculate the similarity to another EncodedMethod
     """
-    def __init__(self, vmx, m):
+    def __init__(self, vmx, m, sim):
         """
 
         :param androguard.core.analysis.analysis.Analysis vmx:
@@ -180,10 +174,12 @@ class Method:
         self.m = m
         self.vmx = vmx
         self.mx = vmx.get_method(m)
+        self.sim = sim
 
         self.sort_h = []
 
         self.__hash = None
+        self.__checksum = None
 
     def __str__(self):
         return "%s %s %s %d" % (self.m.get_class_name(), self.m.get_name(), self.m.get_descriptor(), self.m.get_length())
@@ -192,26 +188,39 @@ class Method:
         """Returns the length of the code of the method"""
         return self.m.get_length()
 
-    def set_checksum(self, fm):
-        self.__hash = mmh3.hash128(fm.get_buff())
-        self.checksum = fm
+    @property
+    def checksum(self):
+        if not self.__checksum:
+            self.__checksum = CheckSumMeth(self, self.sim)
+        return self.__checksum
 
     @property
     def hash(self):
+        if not self.__hash:
+            self.__hash = mmh3.hash128(self.checksum.get_buff())
         return self.__hash
 
 
 class BasicBlock:
-    def __init__(self, bb):
+    def __init__(self, bb, sim):
         self.bb = bb
+        self.sim = sim
         self.__hash = None
+        self.__checksum = None
 
     def set_checksum(self, fm):
-        self.__hash = mmh3.hash128(fm.get_buff())
         self.checksum = fm
 
     @property
+    def checksum(self):
+        if not self.__checksum:
+            self.__checksum = CheckSumBB(self, self.sim)
+        return self.__checksum
+
+    @property
     def hash(self):
+        if not self.__hash:
+            self.__hash = mmh3.hash128(self.checksum.get_buff())
         return self.__hash
 
     def __str__(self):
@@ -222,20 +231,25 @@ class BasicBlock:
 
 
 class StringVM:
-    def __init__(self, el):
+    def __init__(self, el, sim):
         self.el = el
+        self.sim = sim
         self.__hash = None
-
-    def set_checksum(self, fm):
-        # FIXME: we can use the MUTF8 strings here
-        self.__hash = mmh3.hash128(fm.get_buff())
-        self.checksum = fm
+        self.__checksum = None
 
     def get_length(self):
         return len(self.el)
 
     @property
+    def checksum(self):
+        if not self.__checksum:
+            self.__checksum = CheckSumString(self, self.sim)
+        return self.__checksum
+
+    @property
     def hash(self):
+        if not self.__hash:
+            self.__hash = mmh3.hash128(self.checksum.get_buff())
         return self.__hash
 
     def __str__(self):

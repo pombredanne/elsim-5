@@ -19,14 +19,12 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import mmh3
-from operator import itemgetter
 
-from elsim import error, warning, debug, set_debug, get_debug
 import elsim
 from elsim.filters import FilterNone, filter_sort_meth_basic
 
 
-class CheckSumFunc(object):
+class CheckSumFunc:
     def __init__(self, f, sim):
         self.f = f
         self.sim = sim
@@ -60,16 +58,8 @@ class CheckSumFunc(object):
         return self.buff
 
 
-def filter_checksum_meth_basic(f, sim):
-    return CheckSumFunc(f, sim)
 
-
-def filter_sim_meth_basic(sim, m1, m2):
-    ncd2 = sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff())
-    return ncd2
-
-
-class Instruction(object):
+class Instruction:
     def __init__(self, i):
         self.mnemonic = i[1]
 
@@ -77,10 +67,12 @@ class Instruction(object):
         return self.mnemonic
 
 
-class Function(object):
-    def __init__(self, e, el):
+class Function:
+    def __init__(self, el, sim):
         self.function = el
+        self.sim = sim
         self.__hash = None
+        self.__checksum = None
 
     def get_instructions(self):
         for i in self.function.get_instructions():
@@ -92,25 +84,24 @@ class Function(object):
     def __str__(self):
         return self.function.name
 
-    def set_checksum(self, fm):
-        self.__hash = mmh3.hash128(fm.get_buff())
-        self.checksum = fm
+    @property
+    def checksum(self):
+        if not self.__checksum:
+            self.__checksum = CheckSumFunc(self, self.sim)
+        return self.__checksum
 
     @property
     def hash(self):
+        if not self.__hash:
+            self.__hash = mmh3.hash128(self.checksum.get_buff())
         return self.__hash
 
 
-def filter_element_meth_basic(el, e):
-    return Function(e, el)
-
-
 FILTERS_X86 = {
-    elsim.FILTER_ELEMENT_METH: filter_element_meth_basic,
-    elsim.FILTER_CHECKSUM_METH: filter_checksum_meth_basic,
-    elsim.FILTER_SIM_METH: filter_sim_meth_basic,
-    elsim.FILTER_SORT_METH: filter_sort_meth_basic,
-    elsim.FILTER_SKIPPED_METH: FilterNone,
+        elsim.FILTER_ELEMENT_METH: lambda element, iterable, sim: Function(element, sim),
+        elsim.FILTER_SIM_METH: lambda sim, m1, m2: sim.ncd(m1.checksum.get_buff(), m2.checksum.get_buff()),
+        elsim.FILTER_SORT_METH: filter_sort_meth_basic,
+        elsim.FILTER_SKIPPED_METH: FilterNone,
 }
 
 

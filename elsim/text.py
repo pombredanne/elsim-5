@@ -65,22 +65,27 @@ class Text:
 
     trailing and leading whitespaces are removed from the text.
     """
-    def __init__(self, element):
+    def __init__(self, element, sim):
         self.string = element.strip(b' ')
+        self.sim = sim
+
+        # Lazy load them later, if necessary
         self.__hash = None
+        self.__checksum = None
 
     def __str__(self):
         return repr(self.string)
 
-    def set_checksum(self, fm):
-        """
-        :param CheckSumText fm:
-        """
-        self.__hash = mmh3.hash128(fm.get_buff())
-        self.checksum = fm
+    @property
+    def checksum(self):
+        if not self.__checksum:
+            self.__checksum = CheckSumText(self, self.sim)
+        return self.__checksum
 
     @property
     def hash(self):
+        if not self.__hash:
+            self.__hash = mmh3.hash128(self.checksum.get_buff())
         return self.__hash
 
     def __repr__(self):
@@ -88,8 +93,7 @@ class Text:
 
 
 FILTERS_TEXT = {
-    elsim.FILTER_ELEMENT_METH: lambda element, iterable: Text(element),
-    elsim.FILTER_CHECKSUM_METH: lambda element, sim: CheckSumText(element, sim),
+    elsim.FILTER_ELEMENT_METH: lambda element, iterable, sim: Text(element, sim),
     elsim.FILTER_SIM_METH: lambda sim, element1, element2: sim.ncd(element1.checksum.get_buff(), element2.checksum.get_buff()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterEmpty,
