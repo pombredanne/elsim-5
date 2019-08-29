@@ -262,6 +262,8 @@ class Elsim:
 
         self.sim = Similarity()
 
+        self.__base = F  # contains the filter functions
+
         if compressor:
             self.compressor = Compress.by_name(compressor.upper())
         else:
@@ -271,15 +273,23 @@ class Elsim:
 
         # Initialize the filters
         # FIXME: this could be replaced by attributes on this class instead of the large dict.
-        # FIXME: rethink all the items here... maybe we can remove a few
         # FIXME the main reason that we need the proxy object here and can not simply use a list
         # is that we need a hashable object. We could work around this by creating two keys for the
         # two elements and not use the iterable itself.
 
-        # FIXME: set vs list 
-        self.__elements = defaultdict(list)  # for each iterable, contains all elements
-        self.__hashes = defaultdict(list)  # for each iterable, contains all hashes
-        self.__base = F  # contains the filter functions
+        # Note that there is a 1:n relation between Elements and their hashes.
+        # While an Element might be unique, several Elements might produce the same hash.
+        # Think of this easy example: We take strings as input but trim excess whitespaces.
+        # Hence 'hello world' and ' hello world ' are different Elements, but produce the
+        # same hash (as both transform to 'hello world')
+        # That means we use __hashes for easy lookup of unique hashes, but to get all
+        # Elements for a certain hash, we need another dictionary.
+        
+        # We never remove items from those sets, only add them on startup.
+        self.__elements = defaultdict(set)  # for each iterable, contains all unique elements
+        self.__hashes = defaultdict(set)  # for each iterable, contains all unique hashes
+        # Contains a lookup for the hash to get all elements that share the same hash, for each iterable
+        self.ref_set_ident = defaultdict(lambda: defaultdict(set))
 
         self.filters = {
             IDENTICAL_ELEMENTS: set(),  # contains all identical elements from both iterables
@@ -292,15 +302,6 @@ class Elsim:
             SIMILARITY_ELEMENTS: dict(),
             SIMILARITY_SORT_ELEMENTS: dict(),
             }
-
-        # Contains all Hashes of each iterable
-        self.set_els = defaultdict(set)
-        # Contains a lookup for the hash to get the first element with this hash, for each iterable
-        # FIXME: why we need this and ref_set_ident as well? The latter should be sufficient?!
-        # Because, there might be several Elements per hash! Hence, we need only the latter element
-        self.ref_set_els = defaultdict(dict)
-        # Contains a lookup for the hash to get all elements that share the same hash, for each iterable
-        self.ref_set_ident = defaultdict(lambda: defaultdict(list))
 
         # Starts to add all elements from the two iterators
         # to the filter structure and calculate hashes for all elements.
@@ -329,18 +330,14 @@ class Elsim:
                 continue
 
             # If not skipped, add the element to the list of elements for the given Iterable
-            self.__elements[iterable].append(e)
+            self.__elements[iterable].add(e)
 
             # Create the Checksum object, which might transform the content
             # and is used to calculate distances and checksum.
             # Hash the content and add the hash to our list of known hashes
-            self.__hashes[iterable].append(e.hash)
-
-            if e.hash not in self.set_els[iterable]:
-                self.set_els[iterable].add(e.hash)
-                self.ref_set_els[iterable][e.hash] = e
-
-            self.ref_set_ident[iterable][e.hash].append(e)
+            self.__hashes[iterable].add(e.hash)
+            # Add it to the reverse lookup
+            self.ref_set_ident[iterable][e.hash].add(e)
 
     def _init_similarity(self):
         """
@@ -350,23 +347,24 @@ class Elsim:
         Then we iterate over the leftovers and calculate the similarity.
         """
         # Get all elements which are in common -> these are identical
-        intersection_elements = self.set_els[self.e2].intersection(self.set_els[self.e1])
+        intersection_elements = self.__hashes[self.e2].intersection(self.__hashes[self.e1])
         # Get all elements which are different
-        difference_elements = self.set_els[self.e2].difference(intersection_elements)
+        difference_elements = self.__hashes[self.e2].difference(intersection_elements)
         # We remove the set of intersected elements from e1
-        to_test = self.set_els[self.e1].difference(intersection_elements)
+        to_test = self.__hashes[self.e1].difference(intersection_elements)
 
-        # Update the IDENTICAL_ELEMENTS with the actual Elements
-        self.filters[IDENTICAL_ELEMENTS].update([self.ref_set_els[self.e1][i] for i in intersection_elements])
+        # Update the IDENTICAL_ELEMENTS with the actual Elements, including identical elements
+        self.filters[IDENTICAL_ELEMENTS].update([x for i in intersection_elements for x in self.ref_set_ident[self.e1][i]])
 
-        available_e2_elements = [self.ref_set_els[self.e2][i] for i in difference_elements]
+        # Now, we only take one element, as we do not require to test for all identical ones.
+        available_e2_elements = [next(iter(self.ref_set_ident[self.e2][i])) for i in difference_elements]
 
         # Check if some elements in the first file has been modified
         # We compare all different elements from e1 with all different elements from e2
         # Hence, we create a similarity matrix with size n * m
         # where n is the number of different items in e1
         # and m is the number of different items in e2
-        for j in [self.ref_set_els[self.e1][i] for i in to_test]:
+        for j in [next(iter(self.ref_set_ident[self.e1][i])) for i in to_test]:
             self.filters[SIMILARITY_ELEMENTS][j] = dict()
             for k in available_e2_elements:
                 # Calculate and store the similarity between j and k
@@ -466,7 +464,11 @@ class Elsim:
 
     def show_element(self, i, details=True):
         """
-        Show the element and similar ones and print the information to stdout.
+        Show the element and either print all identical elements from e2
+        or show all similar elements.
+        If similar items are found, the distance measure is printed as well.
+
+        Information are printed to stdout.
 
         If details is False, do not show similar items.
         This can be useful if there are no similar ones, i.e. elements are identical, new or deleted.
@@ -476,25 +478,26 @@ class Elsim:
         if not details:
             return
 
-        if i.hash in self.ref_set_els[self.e2]:
-            if len(self.ref_set_ident[self.e2][i.hash]) > 1:
-                for ident in self.ref_set_ident[self.e2][i.hash]:
-                    print("\t\t-->", str(ident))
-            else:
-                print("\t\t-->", str(self.ref_set_els[self.e2][i.hash]))
+        if i.hash in self.ref_set_ident[self.e2]:
+            # Print all identical elements from e2
+            for ident in self.ref_set_ident[self.e2][i.hash]:
+                print("\t\t-i->", ident)
         else:
+            # Print similar items
             for j in self.filters[SIMILARITY_SORT_ELEMENTS][i]:
-                print("\t\t-->", str(j), self.filters[SIMILARITY_ELEMENTS][i][j])
+                print("\t\t-s->", j, self.filters[SIMILARITY_ELEMENTS][i][j])
 
     def get_element_info(self, i):
-        l = []
+        """
+        Does the same as show_element but yields tuples of identical or similar elements
 
-        if i.hash in self.ref_set_els[self.e2]:
-            l.append([i, self.ref_set_els[self.e2][i.hash]])
+        FIXME: seems to be never used and output format is weird...
+        """
+        if i.hash in self.ref_set_ident[self.e2]:
+            yield i, self.ref_set_ident[self.e2][i.hash]
         else:
             for j in self.filters[SIMILARITY_SORT_ELEMENTS][i]:
-                l.append([i, j, self.filters[SIMILARITY_ELEMENTS][i][j]])
-        return l
+                yield i, j, self.filters[SIMILARITY_ELEMENTS][i][j]
 
     def get_associated_element(self, i):
         """
@@ -598,7 +601,9 @@ class Elsim:
             if ik > 0:
                 print("IDENTICAL elements:")
                 for i in self.get_identical_elements():
-                    self.show_element(i, False)
+                    # FIXME: Not sure if we should print all identical elements here again.
+                    # Maybe just use self.show_element(i, False) is enough
+                    self.show_element(i)
 
             if n > 0:
                 print("NEW elements:")
