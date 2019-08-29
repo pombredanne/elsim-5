@@ -18,6 +18,7 @@
 
 import sys
 import json
+# FIXME: base64 decode returns bytes. Need to fix that in both C code and python!
 import base64
 
 from androguard.core.bytecodes import apk
@@ -33,6 +34,7 @@ from elsim import similarity
 METHSIM = 0
 CLASSSIM = 1
 
+# FIXME: The whole signature stuff needs to be replaced...
 DEFAULT_SIGNATURE = 'L0_4'
 
 
@@ -273,16 +275,15 @@ class PublicSignature(object):
             for j in buff[i][0]:
                 if j[0] == METHSIM:
                     type_signature = METHSIM
-                    sub_signatures.append([j[2:], str(base64.b64decode(j[1]))])
+                    sub_signatures.append([j[2:], base64.b64decode(j[1]).decode('UTF-8')])
                 elif j[0] == CLASSSIM:
                     type_signature = CLASSSIM
-                    sub_signatures.append([j[2:], str(base64.b64decode(j[1]))])
+                    sub_signatures.append([j[2:], base64.b64decode(j[1]).decode('UTF-8')])
 
-            if type_signature != None:
-                self.DE.add_signature(
-                    type_signature, i, buff[i][1], sub_signatures)
+            if type_signature:
+                self.DE.add_signature(type_signature, i, buff[i][1], sub_signatures)
             else:
-                print(i, "ERROR")
+                print(i, "ERROR no signature type set!")
 
     def check_apk(self, apk):
         if self.debug:
