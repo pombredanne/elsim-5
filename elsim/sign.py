@@ -15,8 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from androguard.core.analysis.analysis import TAINTED_PACKAGE_CREATE, TAINTED_PACKAGE_CALL
 from androguard.core.bytecodes import dvm
+
+TAINTED_PACKAGE_CREATE = 0
+TAINTED_PACKAGE_CALL = 1
 
 TAINTED_PACKAGE_INTERNAL_CALL = 2
 FIELD_ACCESS = {"R": 0, "W": 1}
@@ -27,8 +29,7 @@ PACKAGE_ACCESS = {
 }
 
 
-class Sign(object):
-
+class Sign:
     def __init__(self):
         self.levels = {}
         self.hlevels = []
@@ -50,12 +51,19 @@ class Sign(object):
         return self.levels["sequencebb"]
 
 
-class Signature(object):
+class Signature:
+    """
+    The Signature is a variant of the grammar described in:
 
-    def __init__(self, vmx):
-        self.vmx = vmx
-        self.tainted_packages = self.vmx.get_tainted_packages()
-        self.tainted_variables = self.vmx.get_tainted_variables()
+    Cesare & Xiang (2010): Classification of Malware Using Structured Control Flow
+
+    It wraps around an :class:`~androguard.core.analysis.analysis.Analysis` object.
+    """
+    def __init__(self, dx):
+        """
+        :param androguard.core.analysis.analysis.Analysis vmx:
+        """
+        self.dx = dx
 
         self._cached_signatures = {}
         self._cached_fields = {}
@@ -83,8 +91,7 @@ class Signature(object):
 
     def _get_method_info(self, m):
         m1 = m.get_method()
-        return "%s-%s-%s" % (m1.get_class_name(), m1.get_name(),
-                             m1.get_descriptor())
+        return "%s-%s-%s" % (m1.get_class_name(), m1.get_name(), m1.get_descriptor())
 
     def _get_sequence_bb(self, analysis_method):
         l = []
@@ -102,7 +109,7 @@ class Signature(object):
 
     def _get_hex(self, analysis_method):
         code = analysis_method.get_method().get_code()
-        if code == None:
+        if not code:
             return ""
 
         buff = ""
@@ -190,7 +197,7 @@ class Signature(object):
 
         method = analysis_method.get_method()
         code = method.get_code()
-        if code == None or code.get_tries_size() <= 0:
+        if code is None or code.get_tries_size() <= 0:
             return buff
 
         handler_catch_list = code.get_handlers()
@@ -204,8 +211,7 @@ class Signature(object):
     def _get_strings_a1(self, analysis_method):
         buff = ""
 
-        strings_method = self.tainted_variables.get_strings_by_method(
-            analysis_method.get_method())
+        strings_method = self.tainted_variables.get_strings_by_method(analysis_method.get_method())
         for s in strings_method:
             for path in strings_method[s]:
                 buff += s.replace('\n', ' ')
@@ -214,8 +220,7 @@ class Signature(object):
     def _get_strings_pa(self, analysis_method):
         l = []
 
-        strings_method = self.tainted_variables.get_strings_by_method(
-            analysis_method.get_method())
+        strings_method = self.tainted_variables.get_strings_by_method(analysis_method.get_method())
         for s in strings_method:
             for path in strings_method[s]:
                 l.append((path[1], "S%d" % len(s.var)))
@@ -228,8 +233,7 @@ class Signature(object):
 
         l = []
 
-        strings_method = self.tainted_variables.get_strings_by_method(
-            analysis_method.get_method())
+        strings_method = self.tainted_variables.get_strings_by_method(analysis_method.get_method())
         for s in strings_method:
             for path in strings_method[s]:
                 l.append((path[1], "S"))
@@ -242,8 +246,7 @@ class Signature(object):
         if key in self._global_cached:
             return self._global_cached[key]
 
-        fields_method = self.tainted_variables.get_fields_by_method(
-            analysis_method.get_method())
+        fields_method = self.tainted_variables.get_fields_by_method(analysis_method.get_method())
         l = []
 
         for f in fields_method:
@@ -254,8 +257,7 @@ class Signature(object):
         return l
 
     def _get_packages_a(self, analysis_method):
-        packages_method = self.tainted_packages.get_packages_by_method(
-            analysis_method.get_method())
+        packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
         l = []
 
         for m in packages_method:
@@ -274,9 +276,8 @@ class Signature(object):
         if key in self._global_cached:
             return self._global_cached[key]
 
-        packages_method = self.tainted_packages.get_packages_by_method(
-            analysis_method.get_method())
-        if self.classes_names == None:
+        packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
+        if self.classes_names is None:
             self.classes_names = analysis_method.get_vm().get_classes_names()
 
         l = []
@@ -316,8 +317,7 @@ class Signature(object):
         return l
 
     def _get_packages_pa_2(self, analysis_method, include_packages):
-        packages_method = self.tainted_packages.get_packages_by_method(
-            analysis_method.get_method())
+        packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
 
         l = []
 
