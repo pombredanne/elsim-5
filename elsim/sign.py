@@ -28,6 +28,41 @@ PACKAGE_ACCESS = {
     TAINTED_PACKAGE_INTERNAL_CALL: 2
 }
 
+SIGNATURE_L0_0 = "L0_0"
+SIGNATURE_L0_1 = "L0_1"
+SIGNATURE_L0_2 = "L0_2"
+SIGNATURE_L0_3 = "L0_3"
+SIGNATURE_L0_4 = "L0_4"
+SIGNATURE_L0_5 = "L0_5"
+SIGNATURE_L0_6 = "L0_6"
+SIGNATURE_L0_0_L1 = "L0_0:L1"
+SIGNATURE_L0_1_L1 = "L0_1:L1"
+SIGNATURE_L0_2_L1 = "L0_2:L1"
+SIGNATURE_L0_3_L1 = "L0_3:L1"
+SIGNATURE_L0_4_L1 = "L0_4:L1"
+SIGNATURE_L0_5_L1 = "L0_5:L1"
+SIGNATURE_L0_0_L2 = "L0_0:L2"
+SIGNATURE_L0_0_L3 = "L0_0:L3"
+SIGNATURE_HEX = "hex"
+SIGNATURE_SEQUENCE_BB = "sequencebb"
+
+SIGNATURES = {
+    SIGNATURE_L0_0: {"type": 0},
+    SIGNATURE_L0_1: {"type": 1},
+    SIGNATURE_L0_2: {"type": 2,
+                     "arguments": ["Landroid"]},
+    SIGNATURE_L0_3: {"type": 2,
+                     "arguments": ["Ljava"]},
+    SIGNATURE_L0_4: {"type": 2,
+                     "arguments": ["Landroid", "Ljava"]},
+    SIGNATURE_L0_5: {"type": 3,
+                     "arguments": ["Landroid"]},
+    SIGNATURE_L0_6: {"type": 3,
+                     "arguments": ["Ljava"]},
+    SIGNATURE_SEQUENCE_BB: {},
+    SIGNATURE_HEX: {},
+}
+
 
 class Sign:
     def __init__(self):
@@ -88,6 +123,32 @@ class Signature:
 
         self.classes_names = None
         self._init_caches()
+
+    def get_method_signature(self, method, grammar_type="", options={}, predef_sign=""):
+        """
+        Return a specific signature for a specific method
+
+        :param androguard.core.bytecodes.dvm.EncodedMethod method: a reference to method from a vm class
+        :param str grammar_type: the type of the signature (optional)
+        :param dict options: the options of the signature (optional)
+        :param str predef_sign: used a predefined signature (optional)
+
+        :rtype: Sign
+        """
+        if predef_sign != "":
+            grammar_type = ""
+            options = {}
+
+            for i in predef_sign.split(":"):
+                if "_" in i:
+                    grammar_type += "L0:"
+                    options["L0"] = SIGNATURES[i]
+                else:
+                    grammar_type += i
+                    grammar_type += ":"
+            grammar_type = grammar_type[:-1]
+
+        return self.get_method(self.dx.get_method(method), grammar_type, options)
 
     def _get_method_info(self, m):
         m1 = m.get_method()

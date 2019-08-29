@@ -28,6 +28,7 @@ from androguard.core.bytecodes import dvm
 from elsim import debug
 import elsim
 from elsim.filters import filter_sort_meth_basic, FilterNone
+from elsim.sign import Signature
 
 
 # FIXME: what was this?!
@@ -123,7 +124,8 @@ class CheckSumMeth:
         """
         if self.signature == None:
             # FIXME
-            self.signature = self.m1.vmx.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
+            sig = Signature(self.m1.vmx)
+            self.signature = sig.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
             self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature
@@ -131,7 +133,8 @@ class CheckSumMeth:
     def get_signature_entropy(self):
         if self.signature == None:
             # FIXME
-            self.signature = self.m1.vmx.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
+            sig = Signature(self.m1.vmx)
+            self.signature = sig.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
             self.signature_entropy = self.sim.entropy(self.signature)
 
         return self.signature_entropy
