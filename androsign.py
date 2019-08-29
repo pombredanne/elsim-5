@@ -18,119 +18,56 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
 
-from elsim.elsign import dalvik_elsign
 import sys
 import os
 
-from optparse import OptionParser
-
+import click
 from androguard.core import androconf
 from androguard.core.bytecodes import apk
 from androguard.util import read
 
-sys.path.append("./elsim/")
-
-option_0 = {
-    'name': ('-i', '--input'),
-    'help': 'file : use this filename',
-    'nargs': 1
-}
-option_1 = {
-    'name': ('-d', '--directory'),
-    'help': 'directory : use this directory',
-    'nargs': 1
-}
-option_2 = {
-    'name': ('-b', '--database'),
-    'help': 'database : use this database',
-    'nargs': 1
-}
-option_3 = {
-    'name': ('-c', '--config'),
-    'help': 'use this configuration',
-    'nargs': 1
-}
-option_4 = {
-    'name': ('-v', '--verbose'),
-    'help': 'display debug information',
-    'action': 'count'
-}
-
-options = [option_0, option_1, option_2, option_3, option_4]
+from elsim import ELSIM_VERSION
+from elsim.elsign import dalvik_elsign
 
 
-def display(ret, debug):
-    print("---->", ret[0])
-    sys.stdout.flush()
+@click.command()
+@click.version_option(ELSIM_VERSION)
+@click.option('-b', '--database', required=True, help='use this database')
+@click.option('-c', '--config', required=True, help='use this configuration')
+@click.option('-v', '--verbose', is_flag=True, help='display debug information')
+@click.argument('comp')
+def cli(comp, database, config, verbose):
+    s = dalvik_elsign.MSignature(database, config, verbose, ps=dalvik_elsign.PublicSignature)
 
+    def display(ret):
+        click.echo("---->", ret[0])
 
-def main(options, arguments):
-    if options.database == None or options.config == None:
-        return
+    def check_file(filename):
+        ret_type = androconf.is_android(filename)
 
-    s = dalvik_elsign.MSignature(options.database,
-                                 options.config,
-                                 options.verbose != None,
-                                 ps=dalvik_elsign.PublicSignature)
-
-    if options.input != None:
-        ret_type = androconf.is_android(options.input)
-
-        print(os.path.basename(options.input), ":", end=' ')
-        sys.stdout.flush()
+        click.echo(os.path.basename(filename), ":", nl=False)
         if ret_type == "APK":
             try:
-                a = apk.APK(options.input)
+                a = apk.APK(filename)
                 if a.is_valid_APK():
-                    display(s.check_apk(a), options.verbose)
+                    display(s.check_apk(a))
                 else:
-                    print("INVALID")
+                    click.echo("INVALID APK", err=True)
             except Exception as e:
-                print("ERROR", e)
+                click.echo("ERROR: {}".format(e), err=True)
 
         elif ret_type == "DEX":
-            display(s.check_dex(read(options.input)), options.verbose)
-    elif options.directory != None:
-        for root, dirs, files in os.walk(options.directory, followlinks=True):
-            if files != []:
-                for f in files:
-                    real_filename = root
-                    if real_filename[-1] != "/":
-                        real_filename += "/"
-                    real_filename += f
+            display(s.check_dex(read(filename)))
+        else:
+            click.echo("Unknown filetype!", err=True)
 
-                    ret_type = androconf.is_android(real_filename)
-                    if ret_type == "APK":
-                        print(os.path.basename(real_filename), ":", end=' ')
-                        sys.stdout.flush()
-                        try:
-                            a = apk.APK(real_filename)
-                            if a.is_valid_APK():
-                                display(s.check_apk(a), options.verbose)
-                            else:
-                                print("INVALID APK")
-                        except Exception as e:
-                            print("ERROR", e)
-                    elif ret_type == "DEX":
-                        try:
-                            print(os.path.basename(real_filename), ":", end=' ')
-                            sys.stdout.flush()
-                            display(s.check_dex(read(real_filename)),
-                                    options.verbose)
-                        except Exception as e:
-                            print("ERROR", e)
-
-    elif options.version != None:
-        print("Androsign version %s" % androconf.ANDROGUARD_VERSION)
+    if os.path.isfile(comp):
+        check_file(comp)
+    else:
+        for root, _, files in os.walk(comp, followlinks=True):
+            for f in files:
+                check_file(os.path.join(root, f))
 
 
 if __name__ == "__main__":
-    parser = OptionParser()
-    for option in options:
-        param = option['name']
-        del option['name']
-        parser.add_option(*param, **option)
-
-    options, arguments = parser.parse_args()
-    sys.argv[:] = arguments
-    main(options, arguments)
+    cli()
