@@ -124,8 +124,8 @@ class Signature:
 
     @property
     def classes_names(self):
-        """Wrapper to get all class names that are available"""
-        return self.dx.classes.keys()
+        """Wrapper to get all internal class names that are available, i.e. no API classes"""
+        return [x for x, ca in self.dx.classes.items() if not ca.is_external()]
 
     def get_method_signature(self, method, grammar_type="", options={}, predef_sign=""):
         """
