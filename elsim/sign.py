@@ -373,7 +373,7 @@ class Signature:
         """
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         """
-        # FIXME: get_packages_by_method returns a dict of str: list(PathP). the str is the classname 
+        # FIXME: get_packages_by_method returns a dict of str: list(PathP). the str is the classname
         packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
         l = []
 
@@ -417,6 +417,7 @@ class Signature:
             for path in packages_method[m]:
                 present = False
                 for i in include_packages:
+                    # FIXME: m.find
                     if m.find(i) == 0:
                         present = True
                         break
@@ -429,8 +430,7 @@ class Signature:
 
                 if path.get_access_flag() == 1:
                     # This is used of the package is called
-                    dst_class_name, dst_method_name, dst_descriptor = path.get_dst(
-                        analysis_method.get_vm().get_class_manager())
+                    dst_class_name, dst_method_name, dst_descriptor = path.get_dst(analysis_method.get_vm().get_class_manager())
 
                     if dst_class_name in self.classes_names:
                         # TODO: this can then be replaced by is_external(). If not external, then the call is 2.
@@ -439,26 +439,30 @@ class Signature:
                         l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[2])))
                     else:
                         if present:
-                            l.append((path.get_idx(), "P%s{%s%s%s}" %
-                                      (PACKAGE_ACCESS[path.get_access_flag(
-                                      )], dst_class_name, dst_method_name,
-                                       dst_descriptor)))
+                            l.append((path.get_idx(), "P%s{%s%s%s}" % (PACKAGE_ACCESS[path.get_access_flag()], dst_class_name, dst_method_name, dst_descriptor)))
                         else:
-                            l.append((path.get_idx(), "P%s" % (
-                                PACKAGE_ACCESS[path.get_access_flag()])))
+                            l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[path.get_access_flag()])))
                 else:
                     # This is called if the package is created
                     if present:
-                        l.append((path.get_idx(), "P%s{%s}" % (
-                            PACKAGE_ACCESS[path.get_access_flag()], m)))
+                        l.append((path.get_idx(), "P%s{%s}" % (PACKAGE_ACCESS[path.get_access_flag()], m)))
                     else:
-                        l.append((path.get_idx(), "P%s" % (
-                            PACKAGE_ACCESS[path.get_access_flag()])))
+                        l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[path.get_access_flag()])))
 
         self._global_cached[key] = l
         return l
 
     def _get_packages_pa_2(self, analysis_method, include_packages):
+        """
+        Returns a list of tuples in the form (offset, str).
+        The offset gives the bytecode offset where the method is used and the str
+        has the form Px{name}.
+        Px is the package access.
+        
+        :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
+        :param List[str] include_packages:
+        :rtype: List[int, str]
+        """
         # FIXME: see above
         packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
 
@@ -480,8 +484,7 @@ class Signature:
                     dst_class_name, dst_method_name, dst_descriptor = path.get_dst(analysis_method.get_vm().get_class_manager())
                     l.append((path.get_idx(), "P%s{%s%s%s}" % (PACKAGE_ACCESS[path.get_access_flag()], dst_class_name, dst_method_name, dst_descriptor)))
                 else:
-                    l.append((path.get_idx(), "P%s{%s}" % (
-                        PACKAGE_ACCESS[path.get_access_flag()], m)))
+                    l.append((path.get_idx(), "P%s{%s}" % (PACKAGE_ACCESS[path.get_access_flag()], m)))
 
         return l
 
