@@ -356,6 +356,10 @@ class Signature:
 
     def _get_fields_a(self, analysis_method):
         """
+        Returns a list of tuples with field accesses inside the method.
+        The first item is the offset in the method, the second the accesstype.
+        0 is for read and 1 for write access to the fields.
+
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :rtype: List[(int, str)]
         """
@@ -380,8 +384,14 @@ class Signature:
         return l
 
     def _get_packages(self, analysis_method, include_packages):
-        l = self._get_packages_pa_1(analysis_method, include_packages)
-        return "".join([i[1] for i in l])
+        """
+        returns just the package access flags, otherwise same as :meth:`_get_packages_pa_1`.
+
+        :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
+        :param List[str] include_packages:
+        :rtype: str
+        """
+        return ''.join(map(itemgetter(1), self._get_packages_pa_1(analysis_method, include_packages)))
 
     def _get_packages_pa_1(self, analysis_method, include_packages):
         """
@@ -392,6 +402,7 @@ class Signature:
         
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :param List[str] include_packages:
+        :rtype: List[int, str]
         """
         key = "PA1-%s-%s" % (self._get_method_info(analysis_method), include_packages)
         if key in self._global_cached:
