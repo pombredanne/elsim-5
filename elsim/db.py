@@ -91,8 +91,7 @@ class ElsimDB(object):
                 if code == None:
                     continue
 
-                buff_list = vmx.get_method_signature(
-                    method, predef_sign=DEFAULT_SIGNATURE).get_list()
+                buff_list = vmx.get_method_signature(method, predef_sign=DEFAULT_SIGNATURE).get_list()
 
                 for i in buff_list:
                     elem_hash = int(simhash(i))
@@ -136,8 +135,7 @@ class ElsimDB(object):
                 if code == None:
                     continue
 
-                buff_list = self.vmx.get_method_signature(
-                    method, predef_sign=DEFAULT_SIGNATURE).get_list()
+                buff_list = self.vmx.get_method_signature(method, predef_sign=DEFAULT_SIGNATURE).get_list()
 
                 for i in buff_list:
                     elem_hash = int(simhash(i))
@@ -174,8 +172,7 @@ class ElsimDB(object):
                 if code == None:
                     continue
 
-                buff_list = self.vmx.get_method_signature(
-                    method, predef_sign=DEFAULT_SIGNATURE).get_list()
+                buff_list = self.vmx.get_method_signature(method, predef_sign=DEFAULT_SIGNATURE).get_list()
 
                 for i in buff_list:
                     elem_hash = int(simhash(i))
@@ -233,8 +230,7 @@ class ElsimDBIn(object):
                 if method.get_length() < 50 or method.get_name() == "<clinit>" or method.get_name() == "<init>":
                     continue
 
-                buff_list = dx.get_method_signature(
-                    method, predef_sign=DEFAULT_SIGNATURE).get_list()
+                buff_list = dx.get_method_signature(method, predef_sign=DEFAULT_SIGNATURE).get_list()
                 if len(set(buff_list)) == 1:
                     continue
 

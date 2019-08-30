@@ -43,13 +43,10 @@ def get_signature(vmx, m):
 
 
 def create_entropies(vmx, m):
-    default_signature = vmx.get_method_signature(
-        m, predef_sign=DEFAULT_SIGNATURE).get_string()
+    default_signature = vmx.get_method_signature(m, predef_sign=DEFAULT_SIGNATURE).get_string()
     l = [default_signature,
-         entropy(vmx.get_method_signature(
-             m, "L4", {"L4": {"arguments": ["Landroid"]}}).get_string()),
-         entropy(vmx.get_method_signature(
-             m, "L4", {"L4": {"arguments": ["Ljava"]}}).get_string()),
+         entropy(vmx.get_method_signature(m, "L4", {"L4": {"arguments": ["Landroid"]}}).get_string()),
+         entropy(vmx.get_method_signature(m, "L4", {"L4": {"arguments": ["Ljava"]}}).get_string()),
          entropy(vmx.get_method_signature(m, "hex").get_string()),
          entropy(vmx.get_method_signature(m, "L2").get_string()),
          ]
