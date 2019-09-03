@@ -17,46 +17,51 @@
 
 from collections import OrderedDict
 from operator import itemgetter
-from androguard.core.bytecodes import dvm
 import binascii
+import enum
+
+from androguard.core.bytecodes import dvm
 
 TAINTED_PACKAGE_CREATE = 0
 TAINTED_PACKAGE_CALL = 1
 TAINTED_PACKAGE_INTERNAL_CALL = 2
 
-SIGNATURE_L0_0 = "L0_0"
-SIGNATURE_L0_1 = "L0_1"
-SIGNATURE_L0_2 = "L0_2"
-SIGNATURE_L0_3 = "L0_3"
-SIGNATURE_L0_4 = "L0_4"
-SIGNATURE_L0_5 = "L0_5"
-SIGNATURE_L0_6 = "L0_6"
-SIGNATURE_L0_0_L1 = "L0_0:L1"
-SIGNATURE_L0_1_L1 = "L0_1:L1"
-SIGNATURE_L0_2_L1 = "L0_2:L1"
-SIGNATURE_L0_3_L1 = "L0_3:L1"
-SIGNATURE_L0_4_L1 = "L0_4:L1"
-SIGNATURE_L0_5_L1 = "L0_5:L1"
-SIGNATURE_L0_0_L2 = "L0_0:L2"
-SIGNATURE_L0_0_L3 = "L0_0:L3"
-SIGNATURE_HEX = "hex"
-SIGNATURE_SEQUENCE_BB = "sequencebb"
+class PredefinedSignature(enum.Enum):
+    """
+    Defines possible signature types
+    """
+    L0_0 = "L0_0"
+    L0_1 = "L0_1"
+    L0_2 = "L0_2"
+    L0_3 = "L0_3"
+    L0_4 = "L0_4"
+    L0_5 = "L0_5"
+    L0_6 = "L0_6"
+    L0_0_L1 = "L0_0:L1"
+    L0_1_L1 = "L0_1:L1"
+    L0_2_L1 = "L0_2:L1"
+    L0_3_L1 = "L0_3:L1"
+    L0_4_L1 = "L0_4:L1"
+    L0_5_L1 = "L0_5:L1"
+    L0_0_L2 = "L0_0:L2"
+    L0_0_L3 = "L0_0:L3"
+    L1 = "L1"
+    L2 = "L2"
+    L3 = "L3"
+    L4 = "L4"
+    HEX = "hex"
+    SEQUENCE_BB = "sequencebb"
 
 SIGNATURES = {
-    SIGNATURE_L0_0: {"type": 0},
-    SIGNATURE_L0_1: {"type": 1},
-    SIGNATURE_L0_2: {"type": 2,
-                     "arguments": ["Landroid"]},
-    SIGNATURE_L0_3: {"type": 2,
-                     "arguments": ["Ljava"]},
-    SIGNATURE_L0_4: {"type": 2,
-                     "arguments": ["Landroid", "Ljava"]},
-    SIGNATURE_L0_5: {"type": 3,
-                     "arguments": ["Landroid"]},
-    SIGNATURE_L0_6: {"type": 3,
-                     "arguments": ["Ljava"]},
-    SIGNATURE_SEQUENCE_BB: {},
-    SIGNATURE_HEX: {},
+    PredefinedSignature.L0_0: {"type": 0},
+    PredefinedSignature.L0_1: {"type": 1},
+    PredefinedSignature.L0_2: {"type": 2, "arguments": ["Landroid"]},
+    PredefinedSignature.L0_3: {"type": 2, "arguments": ["Ljava"]},
+    PredefinedSignature.L0_4: {"type": 2, "arguments": ["Landroid", "Ljava"]},
+    PredefinedSignature.L0_5: {"type": 3, "arguments": ["Landroid"]},
+    PredefinedSignature.L0_6: {"type": 3, "arguments": ["Ljava"]},
+    PredefinedSignature.SEQUENCE_BB: {},
+    PredefinedSignature.HEX: {},
 }
 
 
@@ -65,18 +70,32 @@ class Sign:
     The Sign object contains the signature for a single Method.
     """
     def __init__(self):
+        # It looks like the ordering of the levels matters
         self.levels = OrderedDict()
 
     def add(self, level, value):
+        """
+        Adds given value to level
+
+        :param str level:
+        :param value:
+        """
         self.levels[level] = value
 
-    def get_level(self, l):
-        return self.levels["L%d" % l]
-
     def get_string(self):
-        return ''.join(self.levels.values())
+        """
+        This returns actually bytes, as we require all functions in the similarity module
+        to use bytes.
+        All Strings are encoded as UTF-8.
+
+        :rtype: bytes
+        """
+        return (''.join(self.levels.values())).encode('utf-8')
 
     def get_list(self):
+        """
+        Only used if the Signature type is SEQUENCE_BB
+        """
         return self.levels["sequencebb"]
 
 
@@ -100,49 +119,63 @@ class Signature:
         # Contains the lower level signatures for faster lookup
         self._global_cached = {}
 
+        # Defines which functions shall be called for what kind of signature
         self.levels = {
             # Classical method signature with basic blocks, strings, fields, packages
             "L0": {
-                0: ("_get_strings_a", "_get_fields_a", "_get_packages_a"),
-                1: ("_get_strings_pa", "_get_fields_a", "_get_packages_a"),
-                2: ("_get_strings_a", "_get_fields_a", "_get_packages_pa_1"),
-                3: ("_get_strings_a", "_get_fields_a", "_get_packages_pa_2"),
+                0: (self._get_strings_a, self._get_fields_a, self._get_packages_a, ),
+                1: (self._get_strings_pa, self._get_fields_a, self._get_packages_a, ),
+                2: (self._get_strings_a, self._get_fields_a, self._get_packages_pa_1, ),
+                3: (self._get_strings_a, self._get_fields_a, self._get_packages_pa_2, ),
             },
             # strings
-            "L1": ["_get_strings_a1"],
+            "L1": (self._get_strings_a1, ),
             # exceptions
-            "L2": ["_get_exceptions"],
+            "L2": (self._get_exceptions, ),
             # fill array data
-            "L3": ["_get_fill_array_data"],
+            "L3": (self._get_fill_array_data, ),
+            "L4": (self._get_packages, ),
+            # Get opcodes as names
+            "hex": (self._get_hex, ),
         }
 
-    def get_method_signature(self, method, grammar_type="", options={}, predef_sign=""):
+    def get_method_signature(self, method, grammar_type=None, options=None, predef_sign=None):
         """
         Return a specific signature for a specific method
 
         predef_sign is a shortcut to defining grammar_type and options.
+        But either predef_sign or grammar_type and options must be set.
 
         :param androguard.core.bytecodes.dvm.EncodedMethod method: The method to create the sign
         :param str grammar_type: the type of the signature (optional)
         :param dict options: the options of the signature (optional)
-        :param str predef_sign: used a predefined signature (optional)
+        :param PredefinedSignature predef_sign: used a predefined signature (optional)
 
         :rtype: Sign
         """
-        if predef_sign == "" and grammar_type == "" and options == {}:
+        if predef_sign is None and grammar_type is None and options is None:
             raise ValueError("you must either specify predef_sign or grammar_type and options!")
 
-        if predef_sign != "":
-            grammar_type = []
-            options = {}
+        if options is None:
+            options = dict()
 
-            for i in predef_sign.split(":"):
+        # FIXME: this whole system is super complicated to work with...
+        if predef_sign:
+            if not isinstance(predef_sign, PredefinedSignature):
+                # Legacy
+                predef_sign = PredefinedSignature(predef_sign)
+
+            grammar_type = []
+
+            for i in predef_sign.value.split(":"):
                 if "_" in i:
                     grammar_type.append("L0")
-                    options["L0"] = SIGNATURES[i]
+                    options["L0"] = SIGNATURES[PredefinedSignature(i)]
                 else:
                     grammar_type.append(i)
             grammar_type = ':'.join(grammar_type)
+        elif not isinstance(grammar_type, str) or not isinstance(options, dict):
+            raise ValueError("grammar_type must be a str and options must be a dict")
 
         return self.get_method(self.dx.get_method(method), grammar_type, options)
 
@@ -176,7 +209,7 @@ class Signature:
         return l
 
     @staticmethod
-    def _get_hex(analysis_method):
+    def _get_hex(analysis_method, *args):
         """
         Returns the decoded bytecode as text without any newlines
 
@@ -198,52 +231,41 @@ class Signature:
         """
         bbs = []
         for b in analysis_method.basic_blocks.get():
-            l = []
-            l.append((b.start, "B"))
-            l.append((b.start, "["))
-
             internal = []
 
             op_value = b.get_last().get_op_value()
 
-            # return
-            if op_value >= 0x0e and op_value <= 0x11:
+            if 0x0e <= op_value <= 0x11:
+                # return
                 internal.append((b.end - 1, "R"))
-
-            # if
-            elif op_value >= 0x32 and op_value <= 0x3d:
+            elif 0x32 <= op_value <= 0x3d:
+                # if
                 internal.append((b.end - 1, "I"))
-
-            # goto
-            elif op_value >= 0x28 and op_value <= 0x2a:
+            elif 0x28 <= op_value <= 0x2a:
+                # goto
+                internal.append((b.end - 1, "G"))
+            elif 0x2b <= op_value <= 0x2c:
+                # sparse or packed switch
                 internal.append((b.end - 1, "G"))
 
-            # sparse or packed switch
-            elif op_value >= 0x2b and op_value <= 0x2c:
-                internal.append((b.end - 1, "G"))
+            for func in functions:
+                # FIXME: the called function MUST return a list of tuples!
+                # Otherwise this does not work...
+                # need to check if this is always the case...
+                internal.extend(func(analysis_method, options))
 
-            for f in functions:
-                try:
-                    internal.extend(getattr(self, f)(analysis_method, options))
-                except TypeError:
-                    # FIXME: okay this looks a little bit how'ya'doing...
-                    internal.extend(getattr(self, f)(analysis_method))
+            res = "B["
+            # Sort by the offset and add the according string
+            for i, k in sorted(internal, key=itemgetter(0)):
+                if b.start <= i < b.end:
+                    res += k
+            res += "]"
 
-            internal.sort()
-
-            for i in internal:
-                if i[0] >= b.start and i[0] < b.end:
-                    l.append(i)
-
-            del internal
-
-            l.append((b.end, "]"))
-
-            bbs.append(''.join(i[1] for i in l))
+            bbs.append(res)
         return bbs
 
     @staticmethod
-    def _get_fill_array_data(analysis_method):
+    def _get_fill_array_data(analysis_method, *args):
         """
         Returns the content of fill-array-data-payloads commands
 
@@ -256,14 +278,14 @@ class Signature:
         :rtype: str
         """
         buff = ""
-        for b in analysis_method.basic_blocks.get():
-            for i in b.get_instructions():
+        for basic_block in analysis_method.basic_blocks.get():
+            for i in basic_block.get_instructions():
                 if i.get_name() == "fill-array-data-payload":
                     buff += binascii.hexlify(i.get_data()).decode('ascii')
         return buff
 
     @staticmethod
-    def _get_exceptions(analysis_method):
+    def _get_exceptions(analysis_method, *args):
         """
         Returns the class types of the handlers as one monolithic string
 
@@ -322,8 +344,8 @@ class Signature:
         mca = self.dx.get_method_analysis(analysis_method.get_method())
 
         # If something is here, this is clearly a PACKAGE_CALL.
-        for _, em, off in mca.get_xref_to():
-            yield off, em, TAINTED_PACKAGE_CALL
+        for _, meth, off in mca.get_xref_to():
+            yield off, meth, TAINTED_PACKAGE_CALL
 
         # In order to get the PACKAGE_CREATE, we need to check the ClassAnalysis objects...
         # It stores the source, if and only if the xrefs is a create.
@@ -334,7 +356,7 @@ class Signature:
                         if meth == analysis_method.get_method():
                             yield off, meth, TAINTED_PACKAGE_CREATE
 
-    def _get_strings_a1(self, analysis_method):
+    def _get_strings_a1(self, analysis_method, *args):
         """
         Returns one long string with all used strings in the method,
         where all newlines are replaced by whitespaces.
@@ -344,7 +366,7 @@ class Signature:
         """
         return ''.join([str(k).replace('\n', ' ') for _, k in self._get_all_strings_by_method(analysis_method)])
 
-    def _get_strings_pa(self, analysis_method):
+    def _get_strings_pa(self, analysis_method, *args):
         """
         Returns a list of tuples with the offset of the string usage and S plus the length of the string as second entry.
 
@@ -353,7 +375,7 @@ class Signature:
         """
         return [(k, 'S{}'.format(len(v))) for k, v in self._get_all_strings_by_method(analysis_method)]
 
-    def _get_strings_a(self, analysis_method):
+    def _get_strings_a(self, analysis_method, *args):
         """
         Returns a list of tuples with the offsets of the string usage and 'S' as the second entry.
 
@@ -366,7 +388,7 @@ class Signature:
 
         return self._global_cached[key]
 
-    def _get_fields_a(self, analysis_method):
+    def _get_fields_a(self, analysis_method, *args):
         """
         Returns a list of tuples with field accesses inside the method.
         The first item is the offset in the method, the second the accesstype.
@@ -381,7 +403,7 @@ class Signature:
 
         return self._global_cached[key]
 
-    def _get_packages_a(self, analysis_method):
+    def _get_packages_a(self, analysis_method, *args):
         """
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         """
@@ -415,20 +437,21 @@ class Signature:
             for offset, meth, access in self._get_packages_by_method(analysis_method):
                 cls_name = meth.class_name
                 # Check if parts if the classname are in the list of to include packages
-                present = any(map(lambda x, c=cls_name: x in c, include_packages))
+                present = any(map(lambda x, c=cls_name: x in str(c), include_packages))
 
                 # Here we check what kind of call it is...
                 # 1 => call
                 # 0 => create
-                # the special call 2 is used to define that this is not an API but an internal package
+                # the special call 2 is used to define that this
+                # is not an API but an internal package
                 # but the access flag itself is always 0 or 1
-                if access == 1:
+                if access == TAINTED_PACKAGE_CALL:
                     # This is used of the package is called
                     if isinstance(meth, dvm.EncodedMethod):
                         # If not external, then the call is 2.
                         # In that sense, we are only monitoring calls to APIs here!
                         # If the call is internal, we never print the name.
-                        l.append((offset, "P{}".format(2)))
+                        l.append((offset, "P{}".format(TAINTED_PACKAGE_INTERNAL_CALL)))
                     else:
                         if present:
                             l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.get_descriptor())))
@@ -450,7 +473,7 @@ class Signature:
         The offset gives the bytecode offset where the method is used and the str
         has the form Px{name}.
         Px is the package access.
-        
+ 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :param List[str] include_packages:
         :rtype: List[int, str]
@@ -459,7 +482,7 @@ class Signature:
         for offset, meth, access in self._get_packages_by_method(analysis_method):
             cls_name = meth.class_name
             # Check if parts if the classname are in the list of to include packages
-            present = any(map(lambda x, c=cls_name: x in c, include_packages))
+            present = any(map(lambda x, c=cls_name: x in str(c), include_packages))
 
             if present:
                 l.append((offset, "P{}".format(access)))
@@ -472,7 +495,7 @@ class Signature:
 
         return l
 
-    def get_method(self, analysis_method, signature_type, signature_arguments={}) -> Sign:
+    def get_method(self, analysis_method, signature_type, signature_arguments=None) -> Sign:
         """
         Returns the Sign object for the given Method.
 
@@ -481,52 +504,40 @@ class Signature:
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :param str signature_type:
-        :param dict signature_arguments:
+        :param dict signature_arguments: optional arguments
         :rtype: Sign
         """
+        if not signature_arguments:
+            signature_arguments = dict()
+
         key = "%s-%s-%s" % (self._get_method_info(analysis_method), signature_type, signature_arguments)
 
-        if key in self._cached_signatures:
-            return self._cached_signatures[key]
-
-        s = Sign()
-
-        #print signature_type, signature_arguments
-        for i in signature_type.split(":"):
-            #    print i, signature_arguments[ i ]
-            if i == "L0":
-                _type = self.levels[i][signature_arguments[i]["type"]]
+        if key not in self._cached_signatures:
+            module_signature = Sign()
+            for i in signature_type.split(":"):
                 try:
+                    # Check if we have arguments
                     _arguments = signature_arguments[i]["arguments"]
                 except KeyError:
                     _arguments = []
 
-                value = self._get_bb(analysis_method, _type, _arguments)
-                s.add(i, ''.join(z for z in value))
+                # For each signature type, we call the function and
+                # add the signature type to the Sign object
+                if i == "L0":
+                    # L0 is special, because we use this special _get_bb wrapper
+                    # Get all the functions which shall be applied
+                    _type = self.levels[i][signature_arguments[i]["type"]]
+                    module_signature.add(i, ''.join(self._get_bb(analysis_method, _type, _arguments)))
+                elif i == "sequencebb":
+                    # SequenceBB is special, as it returns a list and not string
+                    value = self._get_sequence_bb(analysis_method)
+                    module_signature.add(i, value)
+                else:
+                    value = ''
+                    for func_name in self.levels[i]:
+                        value += func_name(analysis_method, _arguments)
+                    module_signature.add(i, value)
 
-            elif i == "L4":
-                try:
-                    _arguments = signature_arguments[i]["arguments"]
-                except KeyError:
-                    _arguments = []
+            self._cached_signatures[key] = module_signature
 
-                value = self._get_packages(analysis_method, _arguments)
-                s.add(i, value)
-
-            elif i == "hex":
-                value = self._get_hex(analysis_method)
-                s.add(i, value)
-
-            elif i == "sequencebb":
-                value = self._get_sequence_bb(analysis_method)
-                s.add(i, value)
-
-            else:
-                value = ''
-                for func_name in self.levels[i]:
-                    # FIXME: why this complicated? You can store function pointers! But it looks like this is much more complicated, see code above...
-                    value += getattr(self, func_name)(analysis_method)
-                s.add(i, value)
-
-        self._cached_signatures[key] = s
-        return s
+        return self._cached_signatures[key]

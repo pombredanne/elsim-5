@@ -28,11 +28,7 @@ from androguard.core.bytecodes import dvm
 from elsim import debug
 import elsim
 from elsim.filters import filter_sort_meth_basic, FilterNone
-from elsim.sign import Signature
-
-
-# FIXME: what was this?!
-DEFAULT_SIGNATURE = 'L0_4'
+from elsim import sign
 
 
 class FilterSkip:
@@ -63,7 +59,7 @@ class FilterSkip:
 
 
 FILTERS_DALVIK_SIM = {
-    elsim.FILTER_ELEMENT_METH: lambda element, iterator, sim: Method(iterator.vmx, element, sim),
+    elsim.FILTER_ELEMENT_METH: lambda element, iterator, sim: Method(iterator.vmx, iterator.sig, element, sim),
     elsim.FILTER_SIM_METH: lambda sim, e1, e2: sim.ncd(e1.checksum.get_signature(), e2.checksum.get_signature()),
     elsim.FILTER_SORT_METH: filter_sort_meth_basic,
     elsim.FILTER_SKIPPED_METH: FilterSkip(),
@@ -85,10 +81,11 @@ FILTERS_DALVIK_BB = {
 
 
 class CheckSumMeth:
-    def __init__(self, m1, sim):
+    def __init__(self, m1, sim, use_bytecode=False):
         """
         :param Method m1:
         :param elsim.similarity.Similarity sim:
+        :param bool use_bytecode: should the bytecode be used instead of Signature module
         """
         self.m1 = m1
         self.sim = sim
@@ -107,13 +104,16 @@ class CheckSumMeth:
         self.buff = self.buff.encode('UTF-8')
         self.entropy = sim.entropy(self.buff)
 
-        # FIXME: as long as we dont have Signature back online, we use the bytecode directly
-        if self.m1.m.get_code():
-            self.signature = self.m1.m.get_code().get_bc().get_insn()
-            self.signature_entropy = self.sim.entropy(self.signature)
+        if use_bytecode:
+            if self.m1.m.get_code():
+                self.signature = self.m1.m.get_code().get_bc().get_insn()
+                self.signature_entropy = self.sim.entropy(self.signature)
+            else:
+                self.signature = b''
+                self.signature_entropy = 0.0
         else:
-            self.signature = b''
-            self.signature_entropy = 0.0
+            self.signature = self.m1.sig.get_method_signature(self.m1.m, predef_sign=sign.PredefinedSignature.L0_4).get_string()
+            self.signature_entropy = self.sim.entropy(self.signature)
 
     def get_signature(self):
         """
@@ -122,21 +122,9 @@ class CheckSumMeth:
         
         You can also read about this in http://phrack.org/issues/68/15.html
         """
-        if self.signature == None:
-            # FIXME
-            sig = Signature(self.m1.vmx)
-            self.signature = sig.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
-            self.signature_entropy = self.sim.entropy(self.signature)
-
         return self.signature
 
     def get_signature_entropy(self):
-        if self.signature == None:
-            # FIXME
-            sig = Signature(self.m1.vmx)
-            self.signature = sig.get_method_signature(self.m1.m, predef_sign=DEFAULT_SIGNATURE).get_string()
-            self.signature_entropy = self.sim.entropy(self.signature)
-
         return self.signature_entropy
 
     def get_entropy(self):
@@ -168,7 +156,7 @@ class Method:
     """
     This object is used to calculate the similarity to another EncodedMethod
     """
-    def __init__(self, vmx, m, sim):
+    def __init__(self, vmx, sig, m, sim):
         """
 
         :param androguard.core.analysis.analysis.Analysis vmx:
@@ -176,6 +164,7 @@ class Method:
         """
         self.m = m
         self.vmx = vmx
+        self.sig = sig
         self.mx = vmx.get_method(m)
         self.sim = sim
 
@@ -280,6 +269,7 @@ class ProxyDalvik:
         :param androgaurd.core.analysis.analysis.Analysis vmx:
         """
         self.vmx = vmx
+        self.sig = sign.Signature(vmx)
 
     def __iter__(self):
         """

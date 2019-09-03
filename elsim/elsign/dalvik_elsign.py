@@ -30,28 +30,19 @@ from androguard.util import read
 
 from elsim.elsign.libelsign import Elsign, entropy
 from elsim import similarity
+from elsim import sign
 
 METHSIM = 0
 CLASSSIM = 1
 
-# FIXME: The whole signature stuff needs to be replaced...
-DEFAULT_SIGNATURE = 'L0_4'
-
-
-def get_signature(vmx, m):
-    return vmx.get_method_signature(m, predef_sign=DEFAULT_SIGNATURE).get_string()
-
 
 def create_entropies(vmx, m):
-    default_signature = vmx.get_method_signature(m, predef_sign=DEFAULT_SIGNATURE).get_string()
-    l = [default_signature,
-         entropy(vmx.get_method_signature(m, "L4", {"L4": {"arguments": ["Landroid"]}}).get_string()),
-         entropy(vmx.get_method_signature(m, "L4", {"L4": {"arguments": ["Ljava"]}}).get_string()),
-         entropy(vmx.get_method_signature(m, "hex").get_string()),
-         entropy(vmx.get_method_signature(m, "L2").get_string()),
-         ]
-
-    return l
+    return [vmx.get_method_signature(m, predef_sign=sign.PredefinedSignature.L0_4).get_string(),
+            entropy(vmx.get_method_signature(m, "L4", {"L4": {"arguments": ["Landroid"]}}).get_string()),
+            entropy(vmx.get_method_signature(m, "L4", {"L4": {"arguments": ["Ljava"]}}).get_string()),
+            entropy(vmx.get_method_signature(m, "hex").get_string()),
+            entropy(vmx.get_method_signature(m, "L2").get_string()),
+            ]
 
 
 def FIX_FORMULA(x, z):
