@@ -18,17 +18,11 @@
 from collections import OrderedDict
 from operator import itemgetter
 from androguard.core.bytecodes import dvm
+import binascii
 
 TAINTED_PACKAGE_CREATE = 0
 TAINTED_PACKAGE_CALL = 1
 TAINTED_PACKAGE_INTERNAL_CALL = 2
-
-FIELD_ACCESS = {"R": 0, "W": 1}
-PACKAGE_ACCESS = {
-    TAINTED_PACKAGE_CREATE: 0,
-    TAINTED_PACKAGE_CALL: 1,
-    TAINTED_PACKAGE_INTERNAL_CALL: 2
-}
 
 SIGNATURE_L0_0 = "L0_0"
 SIGNATURE_L0_1 = "L0_1"
@@ -121,11 +115,6 @@ class Signature:
             # fill array data
             "L3": ["_get_fill_array_data"],
         }
-
-    @property
-    def classes_names(self):
-        """Wrapper to get all internal class names that are available, i.e. no API classes"""
-        return [x for x, ca in self.dx.classes.items() if not ca.is_external()]
 
     def get_method_signature(self, method, grammar_type="", options={}, predef_sign=""):
         """
@@ -256,7 +245,12 @@ class Signature:
     @staticmethod
     def _get_fill_array_data(analysis_method):
         """
-        Returns the content of fill-array-data commands
+        Returns the content of fill-array-data-payloads commands
+
+        .. warning::
+            we actually have no idea what was meant here, but we assume that
+            he wanted the content of the array as a hex string.
+            How it was implemented did not even worked in the old androguard version...
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :rtype: str
@@ -264,16 +258,14 @@ class Signature:
         buff = ""
         for b in analysis_method.basic_blocks.get():
             for i in b.get_instructions():
-                if i.get_name() == "FILL-ARRAY-DATA":
-                    buff_tmp = i.get_operands()
-                    for j in range(0, len(buff_tmp)):
-                        buff += "\\x%02x" % ord(buff_tmp[j])
+                if i.get_name() == "fill-array-data-payload":
+                    buff += binascii.hexlify(i.get_data()).decode('ascii')
         return buff
 
     @staticmethod
     def _get_exceptions(analysis_method):
         """
-        Returns the exceptions as string
+        Returns the class types of the handlers as one monolithic string
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :rtype: str
@@ -286,11 +278,9 @@ class Signature:
             # No exception handlers in the method, or no code at all
             return buff
 
-        handler_catch_list = code.get_handlers()
-
-        for handler_catch in handler_catch_list.get_list():
+        for handler_catch in code.get_handlers().get_list():
             for handler in handler_catch.get_handlers():
-                buff += analysis_method.get_vm().get_cm_type(handler.get_type_idx())
+                buff += str(analysis_method.get_vm().get_cm_type(handler.get_type_idx()))
         return buff
 
     def _get_all_strings_by_method(self, analysis_method):
@@ -300,11 +290,11 @@ class Signature:
         :rtype: Generator[(int, str), None, None]
         """
         meth = analysis_method.get_method()
+        # FIXME: this is super slow, as we always check all strings...
         for real_string, string_analysis in self.dx.get_strings_analysis().items():
-            if meth in map(itemgetter(1), string_analysis.get_xref_from()):
-                # FIXME: we do not store the offsets for the strings!
-                # FIXME: If the string is used multiple times, we do not store this information here!
-                yield 0, real_string
+            for _, src_meth, off in string_analysis.get_xref_from(withoffset=True):
+                if meth == src_meth:
+                    yield off, real_string
 
     def _get_all_fields_by_method(self, analysis_method):
         """
@@ -315,12 +305,34 @@ class Signature:
         meth = analysis_method.get_method()
         for field_analysis in self.dx.get_fields():
             # FIXME the return type is crap... should use an enum
-            if meth in map(itemgetter(1), field_analysis.get_xref_read()):
-                # FIXME we do not store the offsets and also not multiple calles!
-                yield 0, 0
-            if meth in map(itemgetter(1), field_analysis.get_xref_write()):
-                # FIXME we do not store the offsets and also not multiple calles!
-                yield 0, 1
+            for _, src_meth, off in field_analysis.get_xref_read(withoffset=True):
+                if meth == src_meth:
+                    yield off, 0
+            for _, src_meth, off in field_analysis.get_xref_write(withoffset=True):
+                if meth == src_meth:
+                    yield off, 1
+
+    def _get_packages_by_method(self, analysis_method):
+        """
+        TODO: This method belongs to androguard
+
+        :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
+        """
+        # FIXME: this should be fixed in androguard, so that we combine MethodAnalysis and MethodClassAnalysis
+        mca = self.dx.get_method_analysis(analysis_method.get_method())
+
+        # If something is here, this is clearly a PACKAGE_CALL.
+        for _, em, off in mca.get_xref_to():
+            yield off, em, TAINTED_PACKAGE_CALL
+
+        # In order to get the PACKAGE_CREATE, we need to check the ClassAnalysis objects...
+        # It stores the source, if and only if the xrefs is a create.
+        for ca in self.dx.get_classes():
+            for called_class, values in ca.get_xref_to().items():
+                for ref, meth, off in values:
+                    if ref == 0x22:  # FIXME: Use the same as TAINTED did for now, might add 0x1c later
+                        if meth == analysis_method.get_method():
+                            yield off, meth, TAINTED_PACKAGE_CREATE
 
     def _get_strings_a1(self, analysis_method):
         """
@@ -330,7 +342,7 @@ class Signature:
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :rtype: str
         """
-        return ''.join([k.replace('\n', ' ') for _, k in self._get_all_strings_by_method(analysis_method)])
+        return ''.join([str(k).replace('\n', ' ') for _, k in self._get_all_strings_by_method(analysis_method)])
 
     def _get_strings_pa(self, analysis_method):
         """
@@ -373,15 +385,7 @@ class Signature:
         """
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         """
-        # FIXME: get_packages_by_method returns a dict of str: list(PathP). the str is the classname
-        packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
-        l = []
-
-        for m in packages_method:
-            for path in packages_method[m]:
-                # FIXME: get_idx() returns the offset inside the bytecode, where the opcode is used with the given class access
-                l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[path.get_access_flag()])))
-        return l
+        return [(offset, 'P{}'.format(access)) for offset, meth, access in self._get_packages_by_method(analysis_method)]
 
     def _get_packages(self, analysis_method, include_packages):
         """
@@ -405,52 +409,40 @@ class Signature:
         :rtype: List[int, str]
         """
         key = "PA1-%s-%s" % (self._get_method_info(analysis_method), include_packages)
-        if key in self._global_cached:
-            return self._global_cached[key]
+        if key not in self._global_cached:
+            l = []
 
-        # FIXME: see above
-        packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
-
-        l = []
-
-        for m in packages_method:
-            for path in packages_method[m]:
-                present = False
-                for i in include_packages:
-                    # FIXME: m.find
-                    if m.find(i) == 0:
-                        present = True
-                        break
+            for offset, meth, access in self._get_packages_by_method(analysis_method):
+                cls_name = meth.class_name
+                # Check if parts if the classname are in the list of to include packages
+                present = any(map(lambda x, c=cls_name: x in c, include_packages))
 
                 # Here we check what kind of call it is...
                 # 1 => call
                 # 0 => create
                 # the special call 2 is used to define that this is not an API but an internal package
                 # but the access flag itself is always 0 or 1
-
-                if path.get_access_flag() == 1:
+                if access == 1:
                     # This is used of the package is called
-                    dst_class_name, dst_method_name, dst_descriptor = path.get_dst(analysis_method.get_vm().get_class_manager())
-
-                    if dst_class_name in self.classes_names:
-                        # TODO: this can then be replaced by is_external(). If not external, then the call is 2.
+                    if isinstance(meth, dvm.EncodedMethod):
+                        # If not external, then the call is 2.
                         # In that sense, we are only monitoring calls to APIs here!
                         # If the call is internal, we never print the name.
-                        l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[2])))
+                        l.append((offset, "P{}".format(2)))
                     else:
                         if present:
-                            l.append((path.get_idx(), "P%s{%s%s%s}" % (PACKAGE_ACCESS[path.get_access_flag()], dst_class_name, dst_method_name, dst_descriptor)))
+                            l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.get_descriptor())))
                         else:
-                            l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[path.get_access_flag()])))
+                            l.append((offset, "P{}".format(access)))
                 else:
                     # This is called if the package is created
                     if present:
-                        l.append((path.get_idx(), "P%s{%s}" % (PACKAGE_ACCESS[path.get_access_flag()], m)))
+                        l.append((offset, "P{}{{{}}}".format(access, cls_name)))
                     else:
-                        l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[path.get_access_flag()])))
+                        l.append((offset, "P{}".format(access)))
 
-        self._global_cached[key] = l
-        return l
+            self._global_cached[key] = l
+        return self._global_cached[key]
 
     def _get_packages_pa_2(self, analysis_method, include_packages):
         """
@@ -463,28 +455,20 @@ class Signature:
         :param List[str] include_packages:
         :rtype: List[int, str]
         """
-        # FIXME: see above
-        packages_method = self.tainted_packages.get_packages_by_method(analysis_method.get_method())
-
         l = []
+        for offset, meth, access in self._get_packages_by_method(analysis_method):
+            cls_name = meth.class_name
+            # Check if parts if the classname are in the list of to include packages
+            present = any(map(lambda x, c=cls_name: x in c, include_packages))
 
-        for m in packages_method:
-            for path in packages_method[m]:
-                present = False
-                for i in include_packages:
-                    if m.find(i) == 0:
-                        present = True
-                        break
+            if present:
+                l.append((offset, "P{}".format(access)))
+                continue
 
-                if present:
-                    l.append((path.get_idx(), "P%s" % (PACKAGE_ACCESS[path.get_access_flag()])))
-                    continue
-
-                if path.get_access_flag() == 1:
-                    dst_class_name, dst_method_name, dst_descriptor = path.get_dst(analysis_method.get_vm().get_class_manager())
-                    l.append((path.get_idx(), "P%s{%s%s%s}" % (PACKAGE_ACCESS[path.get_access_flag()], dst_class_name, dst_method_name, dst_descriptor)))
-                else:
-                    l.append((path.get_idx(), "P%s{%s}" % (PACKAGE_ACCESS[path.get_access_flag()], m)))
+            if access == 1:
+                l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.get_descriptor())))
+            else:
+                l.append((offset, "P{}{{{}}}".format(access, cls_name)))
 
         return l
 
