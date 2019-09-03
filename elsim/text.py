@@ -17,43 +17,19 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from operator import itemgetter
 import mmh3
 
-from elsim import debug, get_debug
 import elsim
-from elsim.similarity import Compress
 from elsim.filters import FilterEmpty, filter_sort_meth_basic
 
 
 class CheckSumText:
-    def __init__(self, s1, sim):
+    def __init__(self, s1):
         """
         :param Text s1: the element
         :param elsim.similarity.Similarity sim: the similarity module
         """
-        self.s1 = s1
-        self.sim = sim
         self.buff = s1.string
-        self.entropy = 0.0
-        self.signature = None
-
-    def get_signature(self):
-        if self.signature == None:
-            raise ValueError("no signature set!")
-        self.signature_entropy = self.sim.entropy(self.signature)
-
-        return self.signature
-
-    def get_signature_entropy(self):
-        if self.signature == None:
-            raise ValueError("no signature set!")
-        self.signature_entropy = self.sim.entropy(self.signature)
-
-        return self.signature_entropy
-
-    def get_entropy(self):
-        return self.entropy
 
     def get_buff(self):
         return self.buff
@@ -79,7 +55,7 @@ class Text:
     @property
     def checksum(self):
         if not self.__checksum:
-            self.__checksum = CheckSumText(self, self.sim)
+            self.__checksum = CheckSumText(self)
         return self.__checksum
 
     @property

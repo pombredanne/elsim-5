@@ -1,3 +1,7 @@
+"""
+the sign module contains methods to enhance an Analysis object
+by using a bytecode signature format developed by Cesare and Xiang
+"""
 # This file is part of Androguard.
 #
 # Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
@@ -145,6 +149,7 @@ class Signature:
 
         predef_sign is a shortcut to defining grammar_type and options.
         But either predef_sign or grammar_type and options must be set.
+        options is optional in any case.
 
         :param androguard.core.bytecodes.dvm.EncodedMethod method: The method to create the sign
         :param str grammar_type: the type of the signature (optional)
@@ -199,14 +204,14 @@ class Signature:
         :param int min_instructions: give the minimal number of instr. the function must have
         :rtype: List[str]
         """
-        l = []
+        res = []
 
         for i in analysis_method.basic_blocks.get():
             instructions = [j for j in i.get_instructions()]
             if len(instructions) >= min_instructions:
-                l.append(''.join(map(lambda x: x.get_name(), instructions)))
+                res.append(''.join(map(lambda x: x.get_name(), instructions)))
 
-        return l
+        return res
 
     @staticmethod
     def _get_hex(analysis_method, *args):
@@ -222,12 +227,15 @@ class Signature:
         return buff
 
     def _get_bb(self, analysis_method, functions, options):
-        # FIXME: needs tests
         """
+        Returns a list of basicblock signatures.
+        For each basicblock, several functions are applied and additional
+        branch opcodes are parsed and added to the output.
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :param List[str] functions: the functions to call
         :param options: the options which might get passed to the functions
+        :rtype: List[str]
         """
         bbs = []
         for b in analysis_method.basic_blocks.get():
@@ -249,9 +257,6 @@ class Signature:
                 internal.append((b.end - 1, "G"))
 
             for func in functions:
-                # FIXME: the called function MUST return a list of tuples!
-                # Otherwise this does not work...
-                # need to check if this is always the case...
                 internal.extend(func(analysis_method, options))
 
             res = "B["
@@ -406,6 +411,7 @@ class Signature:
     def _get_packages_a(self, analysis_method, *args):
         """
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
+        :rtype: List[(int, str)]
         """
         return [(offset, 'P{}'.format(access)) for offset, meth, access in self._get_packages_by_method(analysis_method)]
 
@@ -501,6 +507,13 @@ class Signature:
 
         The signature type is a string of the different signature methods which shall be used.
         Multiple signature methods can be used by separating them with a colon (:).
+
+        signature_arguments must be a dictionary.
+        The dictionary might have entries with the given signature_type which are dictionaries
+        again.
+        If a signature_type L0 is used, it expects to have a key L0 which is again a dict
+        which has the key type, which resolves to an integer.
+        Other functions require the key "arguments".
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         :param str signature_type:

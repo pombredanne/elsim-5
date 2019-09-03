@@ -46,10 +46,8 @@ def eval_res_per_class(ret):
                     z[j][k] = val_percentage
     return z
 
-############################################################
 
-
-class ElsimDB(object):
+class ElsimDB:
     def __init__(self, database_path):
         self.db = DBFormat(database_path)
 
