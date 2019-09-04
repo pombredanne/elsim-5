@@ -32,7 +32,7 @@ def load_analysis(filename):
     return None
 
 
-def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted, diff):
+def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted, diff, score):
     """
     Show similarities between two dalvik containers
 
@@ -45,17 +45,24 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
     :param bool new: should the similarity score include new elements
     :param bool deleted: should the similarity score include deleted elements
     :param bool diff: display the difference
+    :param bool score: only print the score
     """
     el = Elsim(ProxyDalvik(dx1), ProxyDalvik(dx2), FS, threshold, compressor)
-    print("Calculating similarity based on methods")
-    el.show(new, deleted, details)
+    if score:
+        click.echo("Methods: {:7.4f}".format(el.get_similarity_value(new, deleted)))
+    else:
+        print("Calculating similarity based on methods")
+        el.show(new, deleted, details)
 
     if view_strings:
         els = Elsim(ProxyDalvikString(dx1), ProxyDalvikString(dx2), FILTERS_DALVIK_SIM_STRING, threshold, compressor)
-        print("Calculating similarity based on strings")
-        els.show(new, deleted, details)
+        if score:
+            click.echo("Strings: {:7.4f}".format(els.get_similarity_value(new, deleted)))
+        else:
+            print("Calculating similarity based on strings")
+            els.show(new, deleted, details)
 
-    if diff:
+    if diff and not score:
         for i, j in el.split_elements():
             # split_elements returns tuples of similar elements
             # Get a list if "Method" objects
@@ -83,8 +90,9 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
 @click.option("--new/--no-new", help="calculate similarity score by including new elements", show_default=True)
 @click.option("--deleted/--no-deleted", help="calculate similarity score by using deleted elementes", show_default=True)
 @click.option("-x", "--xstrings", is_flag=True, help="display similarites of strings")
+@click.option("--score", is_flag=True, help="Only display the similarity score for the given APKs")
 @click.argument('comp', nargs=2)
-def cli(details, diff, compressor, threshold, size, exclude, new, deleted, xstrings, comp):
+def cli(details, diff, compressor, threshold, size, exclude, new, deleted, xstrings, score, comp):
     """
     Compare a Dalvik based file against another file or a whole directory.
 
@@ -115,12 +123,12 @@ def cli(details, diff, compressor, threshold, size, exclude, new, deleted, xstri
                 dx2 = load_analysis(real_filename)
                 if dx2 is None:
                     click.echo(click.style("The file '{}' is not an APK or DEX. Skipping.".format(real_filename), fg='red'), err=True)
-                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted, diff)
+                check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted, diff, score)
     else:
         dx2 = load_analysis(comp[1])
         if dx2 is None:
             raise click.BadParameter("The supplied file '{}' is not an APK or a DEX file!".format(comp[1]))
-        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted, diff)
+        check_one_file(dx1, dx2, FS, threshold, compressor, details, xstrings, new, deleted, diff, score)
 
 
 if __name__ == "__main__":

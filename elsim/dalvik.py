@@ -256,8 +256,8 @@ class CheckSumString:
         self.buff = self.m1.el
 
     def get_buff(self):
-        # FIXME: the checksumstring thing should have a better structure!
-        return self.buff.encode('UTF-8')
+        # The MUTF8String is actually bytes
+        return self.buff
 
 
 class ProxyDalvik:
