@@ -1,23 +1,7 @@
-#!/usr/bin/env python
-
-# This file is part of Elsim.
-#
-# Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
-# All rights reserved.
-#
-# Elsim is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Elsim is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
-
+"""
+Use elsim to populate a large DB of methods
+and be able to lookup methods from new files later
+"""
 import re
 import json
 from collections import defaultdict
@@ -29,7 +13,30 @@ from elsim import sign
 
 
 class DBFormat:
+    """
+    DBFormat specifies a simple database to store simhashes of methods.
+    The database uses a tree structure with depth 3 to store the items:
+
+    1) A name is used to group subnames
+    2) A subname is used to group classnames
+    3) A classname is used to group simhashes
+
+    Instead of adding simhashes of the whole method, simhashes of BasicBlocks
+    are added.
+    This should give better results for example when code is obfuscated.
+
+    This structure could, for example, be used to collect malware
+    samples in the following notation:
+
+    1) the name corresponds to the malware family
+    2) the subname corresponds to the sha256 hash of a particular sample
+
+    Another structure might use sub-families instead of filenames.
+    """
     def __init__(self, filename):
+        """
+        :param str filename: the databasefile to use
+        """
         self.filename = filename
 
         try:
@@ -73,13 +80,12 @@ class DBFormat:
             self.D[name][sname]["SIZE"] += size
             self.D[name][sname][sclass][elem] = size
 
-    def is_present(self, elem):
-        for i in self.D:
-            if elem in self.D[i]:
-                return True, i
-        return False, None
-
     def elems_are_presents(self, elems):
+        """
+        Checks if the given simhashes are inside the tree
+
+        :param Set[int] elems: simhashes to check if present
+        """
         ret = defaultdict(lambda: defaultdict(dict))
         info = defaultdict(lambda: defaultdict(dict))
 
@@ -131,10 +137,6 @@ class ElsimDB:
 
     If the interface is used using context guards,
     it will save the database to disk by default!
-
-    .. todo::
-        although simhashes are computed here, they are never used
-        in the lookup!
     """
     def __init__(self, output, autosave=True):
         """

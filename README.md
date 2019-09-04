@@ -53,12 +53,12 @@ Changes to original library
 * Changed filter system in Elsim (will probably change some more)
 * Renamed modules and moved them around
 * removed simhash module, as it is in pypi
+* `elsim/db` was unified and many methods which seems to be never used and seems to were broken anyways were removed
 
 Broken and not (yet) fixed
 --------------------------
 
 * Elsign
-* elsim/db.py
 
 Things that need design re-considerations
 -----------------------------------------
@@ -73,6 +73,12 @@ These are for example `lzma`, `zlib` and `bz2`.
 
 Unfortunately, we have no idea what kind of algorithm `VCBLOCKSORT` is. It seems to only occur in elsim
 and has no description.
+
+The androdb tool seems to be a nice idea but it probably needs more work.
+Also the database interface seems to be too complicated. One should consider writing another database
+interface in SQL or another better database than the complicated dict madness.
+It is also not quite clear what the intention was and how it _should_ work, as there were many
+functions completely broken.
 
 Compression Method
 ------------------
