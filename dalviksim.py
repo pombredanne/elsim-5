@@ -77,11 +77,15 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
 @click.command()
 @click.version_option(ELSIM_VERSION)
 @click.option("-d", "--details", is_flag=True, help="display detailed information about the changes")
-@click.option("--diff", is_flag=True, help="Show the difference between the files")
+@click.option("--diff", is_flag=True, help="Show the difference between the files. Does not work if --score is used.")
 @click.option("-c", "--compressor", default="SNAPPY", type=click.Choice([x.name for x in Compress]),
         show_default=True,
         show_choices=True,
-        help="Set the compression method")
+        help="Set the compression method. Some methods perform better,"
+        " as they can compress the content much better, but usually"
+        " come with the drawback, that they are very slow. "
+        "While LZMA has the best compression, Snappy has well compression but"
+        " is much faster than LZMA.")
 @click.option("-t", "--threshold", default=0.6, type=click.FloatRange(0, 1),
         help="Threshold when sorting interesting items")
 @click.option("-s", "--size", type=int,
@@ -90,7 +94,8 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
 @click.option("--new/--no-new", help="calculate similarity score by including new elements", show_default=True)
 @click.option("--deleted/--no-deleted", help="calculate similarity score by using deleted elementes", show_default=True)
 @click.option("-x", "--xstrings", is_flag=True, help="display similarites of strings")
-@click.option("--score", is_flag=True, help="Only display the similarity score for the given APKs")
+@click.option("--score", is_flag=True, help="Only display the similarity score for the given APKs. "
+        "The flags --deleted and --new still apply")
 @click.argument('comp', nargs=2)
 def cli(details, diff, compressor, threshold, size, exclude, new, deleted, xstrings, score, comp):
     """
