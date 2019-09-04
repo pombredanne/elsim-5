@@ -3,6 +3,10 @@ Elsim
 
 The elsim (ELement SIMilarity) library provides python functions to assess the similarity of byte strings
 by using NCD (normalized compression distance).
+While the library itself is not limited to comparision of any byte sequence, many tools
+are specifically crafted to compare Android applications in the form of APK or DEX files.
+In order to implement a new method for comparing objects of choice, a wrapper and some
+weird filter dicts are used to put the data into the Elsim module.
 
 The elsim library was part of androguard but removed around the v2.0 release of androguard.
 It was filter-branch'ed from the androguard repository and fixes were applied to make it work
@@ -59,6 +63,7 @@ Broken and not (yet) fixed
 --------------------------
 
 * Elsign
+* unit tests for all the modules
 
 Things that need design re-considerations
 -----------------------------------------
@@ -67,9 +72,14 @@ currently there are two objects used to store the elements.
 The first is a wrapper for the original element, the second a wrapper for the modified one.
 This should somehow be replaced and all the lookups in the dicts can be enhanced as well.
 
+The whole FILTER technique seems to be a neat idea but it is a PITA to implement.
+Maybe it would be better to simply have to implement some class which has the required methods
+and also provides the compareable types. Someone should think about a good solution here.
+
 It might not be required to have all the compression methods as separate C libraries.
 Many of the used compression libraries are already in the python's standard library.
 These are for example `lzma`, `zlib` and `bz2`.
+The question is also how much faster is the C code in reality.
 
 Unfortunately, we have no idea what kind of algorithm `VCBLOCKSORT` is. It seems to only occur in elsim
 and has no description.
@@ -79,6 +89,10 @@ Also the database interface seems to be too complicated. One should consider wri
 interface in SQL or another better database than the complicated dict madness.
 It is also not quite clear what the intention was and how it _should_ work, as there were many
 functions completely broken.
+
+The native elsign module depends on the similarity module which makes it super hard to build it with python only.
+This should be looked at and properly implemented, so that you dont need a ton of files
+to compile for elsign but only the elsign module ifself.
 
 Compression Method
 ------------------
