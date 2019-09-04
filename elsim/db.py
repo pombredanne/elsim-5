@@ -20,6 +20,8 @@
 
 import re
 import json
+from collections import defaultdict
+from operator import itemgetter
 
 from hashes.simhash import simhash
 
@@ -37,46 +39,37 @@ class DBFormat:
             print("Impossible to open filename: " + filename)
             self.D = dict()
 
-        self.H = {}
-        self.N = {}
+        # H is used as a lookup structure. Only D is ever saved!
+        self.H = defaultdict(lambda: defaultdict(dict))
 
         for i, v in self.D.items():
-            self.H[i] = dict()
             for j, vv in v.items():
-                if j == "NAME":
-                    self.N[i] = re.compile(vv)
-                    continue
-
-                self.H[i][j] = dict()
                 for k, vvv in vv.items():
                     if isinstance(vvv, dict):
                         self.H[i][j][k] = set(map(int, vvv.keys()))
 
-    def add_name(self, name, value):
-        if name not in self.D:
-            self.D[name] = {}
-
-        self.D[name]["NAME"] = value
-
     def add_element(self, name, sname, sclass, size, elem):
-        try:
-            if elem not in self.D[name][sname][sclass]:
-                self.D[name][sname][sclass][elem] = size
-                self.D[name][sname]["SIZE"] += size
+        """
+        Adds a single method to the tree structure
+        if the method is not already in the tree.
 
-        except KeyError:
-            if name not in self.D:
-                self.D[name] = {}
-                self.D[name][sname] = {}
-                self.D[name][sname]["SIZE"] = 0
-                self.D[name][sname][sclass] = {}
-            elif sname not in self.D[name]:
-                self.D[name][sname] = {}
-                self.D[name][sname]["SIZE"] = 0
-                self.D[name][sname][sclass] = {}
-            elif sclass not in self.D[name][sname]:
-                self.D[name][sname][sclass] = {}
+        :param str name: first tree element
+        :param str sname: second tree element
+        :param str sclass: the class name (third tree element)
+        :param int size: size of the method
+        :param int elem: simhash of the method
+        """
+        if name not in self.D:
+            self.D[name] = dict()
 
+        if sname not in self.D[name]:
+            self.D[name][sname] = dict()
+            self.D[name][sname]["SIZE"] = 0
+
+        if sclass not in self.D[name][sname]:
+            self.D[name][sname][sclass] = dict()
+
+        if elem not in self.D[name][sname][sclass]:
             self.D[name][sname]["SIZE"] += size
             self.D[name][sname][sclass][elem] = size
 
@@ -87,20 +80,13 @@ class DBFormat:
         return False, None
 
     def elems_are_presents(self, elems):
-        ret = {}
-        info = {}
+        ret = defaultdict(lambda: defaultdict(dict))
+        info = defaultdict(lambda: defaultdict(dict))
 
         for i in self.H:
-            ret[i] = {}
-            info[i] = {}
-
             for j in self.H[i]:
-                ret[i][j] = {}
-                info[i][j] = {}
-
                 for k in self.H[i][j]:
-                    val = [self.H[i][j][k].intersection(
-                        elems), len(self.H[i][j][k]), 0, 0]
+                    val = [self.H[i][j][k].intersection(elems), len(self.H[i][j][k]), 0, 0]
 
                     size = 0
                     for z in val[0]:
@@ -116,242 +102,154 @@ class DBFormat:
 
         return ret, info
 
-    def classes_are_presents(self, classes):
-        m = set()
-        for j in classes:
-            for i in self.N:
-                if self.N[i].search(j) != None:
-                    m.add(i)
-        return m
-
     def show(self):
+        """
+        print the database to stdout
+        """
         for i in self.D:
-            print(i, ":")
+            print(i)
             for j in self.D[i]:
                 print("\t", j, len(self.D[i][j]))
                 for k in self.D[i][j]:
-                    print("\t\t", k, len(self.D[i][j][k]))
+                    if isinstance(self.D[i][j][k], dict):
+                        print("\t\t", k, len(self.D[i][j][k]))
+                    else:
+                        print("\t\t", k, self.D[i][j][k])
 
     def save(self):
+        """
+        Save the database as JSON file to disk
+        """
         with open(self.filename, "w") as fd:
             json.dump(self.D, fd)
 
 
 class ElsimDB:
-    def __init__(self, database_path):
-        """
-        :param str database_path:
-        """
-        self.db = DBFormat(database_path)
+    """
+    Provides an interface to import data into the Elsim Database
+    and lookup percentages of similarity later.
 
-    def eval_res(self, ret, info, threshold=10.0):
-        sorted_elems = {}
+    If the interface is used using context guards,
+    it will save the database to disk by default!
 
-        for i in ret:
-            sorted_elems[i] = []
-            for j in ret[i]:
+    .. todo::
+        although simhashes are computed here, they are never used
+        in the lookup!
+    """
+    def __init__(self, output, autosave=True):
+        """
+        :param str output: the filename of the database
+        """
+        self.db = DBFormat(output)
+        self.__autosave = autosave
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _type, _value, _traceback):
+        if self.__autosave:
+            self.save()
+
+    def _eval_res(self, ret, info, threshold=10.0):
+        """
+        :param ret:
+        :param info:
+        :param float threshold: threshold in percent when outputs shall be produced
+        """
+        sorted_elems = defaultdict(list)
+
+        for name, name_values in ret.items():
+            for subname, subname_values in name_values.items():
                 t_size = 0
-
                 elems = set()
-                for k in ret[i][j]:
-                    val = ret[i][j][k]
 
+                for k, val in subname_values.items():
                     if len(val[0]) == 1 and val[1] > 1:
                         continue
 
                     t_size += val[-1]
                     elems.add(k)
 
-                percentage_size = (t_size / float(info[i][j]["SIZE"])) * 100
+                percentage_size = (t_size / float(info[name][subname]["SIZE"])) * 100
 
                 if percentage_size > threshold:
-                    sorted_elems[i].append((j, percentage_size, elems))
-
-            if len(sorted_elems[i]) == 0:
-                del sorted_elems[i]
+                    sorted_elems[name].append((subname, percentage_size, elems))
 
         return sorted_elems
 
-    def percentages(self, vm, vmx, threshold=10):
+    def percentages(self, vmx, threshold=10):
         elems_hash = set()
-        for _class in vm.get_classes():
+
+        signature_module = sign.Signature(vmx)
+
+        for _cls in vmx.get_classes():
+            if _cls.is_external():
+                continue
+            _class = _cls.get_vm_class()
+
             for method in _class.get_methods():
                 code = method.get_code()
-                if code == None:
+                if code is None:
                     continue
-
-                #FIXME 
-                buff_list = vmx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
-
-                for i in buff_list:
-                    elem_hash = int(simhash(i))
-                    elems_hash.add(elem_hash)
+                # FIXME: shouldnt here not apply the same rules as on import?
+                # Like skip constructors and too short methods?
+                for i in signature_module.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list():
+                    elems_hash.add(int(simhash(i)))
 
         ret, info = self.db.elems_are_presents(elems_hash)
-        sorted_ret = self.eval_res(ret, info, threshold)
+        sorted_ret = self._eval_res(ret, info, threshold)
 
-        info = {}
+        info = defaultdict(list)
 
-        for i in sorted_ret:
-            v = sorted(sorted_ret[i], key=lambda x: x[1])
-            v.reverse()
-
-            info[i] = []
-
-            for j in v:
-                info[i].append([j[0], j[1]])
-
-        info_name = self.db.classes_are_presents(vm.get_classes_names())
-
-        for i in info_name:
-            if i not in info:
-                info[i] = None
+        for k, values in sorted_ret.items():
+            for j in sorted(values, key=itemgetter(1), reverse=True):
+                info[k].append([j[0], j[1]])
 
         return info
 
-    @staticmethod
-    def eval_res_per_class(ret):
-        z = {}
+    def add(self, dx, name, sname, regexp_pattern=None, regexp_exclude_pattern=None):
+        """
+        Add all classes which match certain rules to the database.
 
-        for i in ret:
-            for j in ret[i]:
-                for k in ret[i][j]:
-                    val = ret[i][j][k]
-                    if len(val[0]) == 1 and val[1] > 1:
-                        continue
+        Only methods with a length >= 50 are added.
+        No constructor (static and normal) methods are added.
 
-                    if len(val[0]) == 0:
-                        continue
+        Additional exlcludes or whitelists can be defined by classnames
+        as regexes.
+        
+        :param androguard.core.analysis.analysis.Analysis dx:
+        :param str name: name, the first key in the tree
+        :param str sname: subname, the second key in the tree
+        :param str regexp_pattern: whitelist regex pattern
+        :param str regexp_exclude_pattern: blacklist regex pattern
+        """
+        sign_module = sign.Signature(dx)
 
-                    if j not in z:
-                        z[j] = {}
+        for _cls in dx.get_classes():
+            if _cls.is_external():
+                continue
+            _class = _cls.get_vm_class()
 
-                    val_percentage = (len(val[0]) / float(val[1])) * 100
-                    if (val_percentage != 0):
-                        z[j][k] = val_percentage
-        return z
-
-    def percentages_code(self, exclude_list):
-        libs = re.compile('|'.join("(" + i + ")" for i in exclude_list))
-
-        classes_size = 0
-        classes_db_size = 0
-        classes_edb_size = 0
-        classes_udb_size = 0
-
-        for _class in self.vm.get_classes():
-            class_size = 0
-            elems_hash = set()
-            for method in _class.get_methods():
-                code = method.get_code()
-                if code == None:
-                    continue
-
-                #FIXME
-                buff_list = self.vmx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
-
-                for i in buff_list:
-                    elem_hash = int(simhash(i))
-                    elems_hash.add(elem_hash)
-
-                class_size += method.get_length()
-
-            classes_size += class_size
-
-            if class_size == 0:
+            # whitelist
+            if regexp_pattern and not re.match(regexp_pattern, _class.get_name()):
                 continue
 
-            ret = self.db.elems_are_presents(elems_hash)
-            sort_ret = self.eval_res_per_class(ret)
-            if sort_ret == {}:
-                if libs.search(_class.get_name()) != None:
-                    classes_edb_size += class_size
-                else:
-                    classes_udb_size += class_size
-            else:
-                classes_db_size += class_size
+            # blacklist
+            if regexp_exclude_pattern and re.match(regexp_exclude_pattern, _class.get_name()):
+                continue
 
-        return (classes_db_size/float(classes_size)) * 100, (classes_edb_size/float(classes_size)) * 100, (classes_udb_size/float(classes_size)) * 100
-
-    def percentages_to_graph(self):
-        info = {"info": [], "nodes": [], "links": []}
-        N = {}
-        L = {}
-
-        for _class in self.vm.get_classes():
-            elems_hash = set()
+            print("\tadding", _class.get_name())
             for method in _class.get_methods():
                 code = method.get_code()
-                if code == None:
+                if not code or method.get_length() < 50 or method.get_name() in ("<clinit>", "<init>"):
                     continue
 
-                #FIXME
-                buff_list = self.vmx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
-
-                for i in buff_list:
-                    elem_hash = int(simhash(i))
-                    elems_hash.add(elem_hash)
-
-            ret = self.db.elems_are_presents(elems_hash)
-            sort_ret = self.eval_res_per_class(ret)
-
-            if sort_ret != {}:
-                if _class.get_name() not in N:
-                    info["nodes"].append(
-                        {"name": _class.get_name().split("/")[-1], "group": 0})
-                    N[_class.get_name()] = len(N)
-
-                for j in sort_ret:
-                    if j not in N:
-                        N[j] = len(N)
-                        info["nodes"].append({"name": j, "group": 1})
-
-                    key = _class.get_name() + j
-                    if key not in L:
-                        L[key] = {"source": N[_class.get_name()],
-                                  "target": N[j], "value": 0}
-                        info["links"].append(L[key])
-
-                    for k in sort_ret[j]:
-                        if sort_ret[j][k] > L[key]["value"]:
-                            L[key]["value"] = sort_ret[j][k]
-
-        return info
-
-
-class ElsimDBIn:
-    def __init__(self, output):
-        self.db = DBFormat(output)
-
-    def add_name(self, name, value):
-        self.db.add_name(name, value)
-
-    def add(self, d, dx, name, sname, regexp_pattern, regexp_exclude_pattern):
-        for _class in d.get_classes():
-            if regexp_pattern != None:
-                if re.match(regexp_pattern, _class.get_name()) == None:
-                    continue
-            if regexp_exclude_pattern != None:
-                if re.match(regexp_exclude_pattern, _class.get_name()) != None:
-                    continue
-
-            print("\t", _class.get_name())
-            for method in _class.get_methods():
-                code = method.get_code()
-                if code == None:
-                    continue
-
-                if method.get_length() < 50 or method.get_name() == "<clinit>" or method.get_name() == "<init>":
-                    continue
-
-                #FIXME
-                buff_list = dx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
+                buff_list = sign_module.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
                 if len(set(buff_list)) == 1:
                     continue
 
                 for e in buff_list:
-                    self.db.add_element(name, sname, _class.get_name(
-                    ), method.get_length(), int(simhash(e)))
+                    self.db.add_element(name, sname, str(_class.get_name()), method.get_length(), int(simhash(e)))
 
     def save(self):
         self.db.save()

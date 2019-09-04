@@ -8,7 +8,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "androguard>=3.4.0",
-        "python-hashes",
+        "python-hashes>=0.2",  # only available via `pip install git+https://github.com/sean-public/python-hashes` right now :(
         "click",
         "murmurhash3",
         "numpy",  # only used once, not sure if actual dependency or just some optional stuff

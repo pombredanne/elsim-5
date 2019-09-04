@@ -1,86 +1,84 @@
-#!/usr/bin/env python
-
-# This file is part of Androguard.
-#
-# Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
-# All rights reserved.
-#
-# Androguard is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Androguard is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
-
-from androguard.util import read
-from androguard.core.analysis import analysis
-from androguard.core.bytecodes import apk, dvm
+import os
+import click
 from androguard.core import androconf
-from elsim.similarity import *
-from optparse import OptionParser
-import sys
-sys.path.append("./")
+from androguard.misc import AnalyzeAPK, AnalyzeDex
 
-PATH_INSTALL = "../androguard"
-
-sys.path.append(PATH_INSTALL)
+from elsim import ELSIM_VERSION
+from elsim import db
 
 
-option_0 = {'name': ('-i', '--input'),
-            'help': 'file : use these filenames', 'nargs': 1}
-option_1 = {'name': ('-o', '--output'),
-            'help': 'file : use these filenames', 'nargs': 1}
-option_2 = {'name': ('-n', '--name'),
-            'help': 'file : use these filenames', 'nargs': 1}
-option_3 = {'name': ('-s', '--subname'),
-            'help': 'file : use these filenames', 'nargs': 1}
-option_4 = {'name': ('-d', '--display'),
-            'help': 'display the file in human readable format', 'action': 'count'}
-option_5 = {'name': ('-v', '--version'),
-            'help': 'version of the API', 'action': 'count'}
-
-options = [option_0, option_1, option_2, option_3, option_4]
-
-############################################################
+def load_analysis(filename):
+    """Return an AnalysisObject depding on the filetype"""
+    ret_type = androconf.is_android(filename)
+    if ret_type == "APK":
+        _, _, dx = AnalyzeAPK(filename)
+        return dx
+    if ret_type == "DEX":
+        _, _, dx = AnalyzeDex(filename)
+        return dx
+    return None
 
 
-def main(options, arguments):
-    if options.input != None and options.output != None and options.name != None and options.subname != None:
-        edi = ElsimDBIn(options.output)
+def process_single_file(database, filename):
+    dx = load_analysis(filename)
+    if not dx:
+        print(filename, "ERROR")
 
-        ret_type = androconf.is_android(options.input)
-        if ret_type == "APK":
-            a = apk.APK(options.input)
-            d1 = dvm.DalvikVMFormat(a.get_dex())
-        elif ret_type == "DEX":
-            d1 = dvm.DalvikVMFormat(read(options.input))
+    print(filename, database.percentages(dx))
 
-        dx1 = analysis.VMAnalysis(d1)
 
-        regexp_pattern = None
-        regexp_exclude_pattern = None
+@click.group()
+@click.version_option(ELSIM_VERSION)
+@click.option("-d", "--database", type=str, required=True, help="Use this database file")
+@click.pass_context
+def cli(ctx, database):
+    ctx.obj = database
 
-        edi.add(d1, dx1, options.name, options.sname,
-                regexp_pattern, regexp_exclude_pattern)
-        edi.save()
 
-    elif options.version != None:
-        print(("Androapptodb version %s" % androconf.ANDROGUARD_VERSION))
+@cli.command()
+@click.option("-n", "--name", type=str, required=True, help="use this name")
+@click.option("-s", "--subname", type=str, required=True, help="Use this subname")
+@click.argument("filename")
+@click.pass_obj
+def add(database, name, subname, filename):
+    """
+    Import the given file into the database
+
+    Name and Subname are used to sort the given file into the database.
+    The database is a tree-like structure and contains:
+    name -> subname -> classname -> methods as simhash
+    """
+    dx = load_analysis(filename)
+    if not dx:
+        raise click.BadParameter("Not a valid APK or DEX file!")
+
+    with db.ElsimDB(database) as edi:
+        edi.add(dx, name, subname)
+
+
+@cli.command()
+@click.argument("filename", nargs=-1)
+@click.pass_obj
+def isin(database, filename):
+    db_file = db.ElsimDB(database)
+
+    for f in filename:
+        if os.path.isfile(f):
+            process_single_file(db_file, f)
+        elif os.path.isdir(f):
+            for root, _, files in os.walk(f):
+                for fname in files:
+                    process_single_file(db_file, os.path.join(root, fname))
+
+
+@cli.command()
+@click.pass_obj
+def show(database):
+    """
+    Shows the content of the database
+    """
+    db.DBFormat(database).show()
 
 
 if __name__ == "__main__":
-    parser = OptionParser()
-    for option in options:
-        param = option['name']
-        del option['name']
-        parser.add_option(*param, **option)
-
-    options, arguments = parser.parse_args()
-    sys.argv[:] = arguments
-    main(options, arguments)
+    cli()
