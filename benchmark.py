@@ -96,7 +96,7 @@ def test_normal_compressor(n, data):
     The condition that C(E) = 0 is never tested, but should be the case for all compression
     methods.
 
-    You can read more about this in Cilibrasi and Vitanyi (2005): Clustering by compression,
+    You can read more about this in Cilibrasi and Vitanyi (2003): Clustering by compression,
     especially in Section 3.1.
     """
     res = collections.OrderedDict()
@@ -144,7 +144,7 @@ def benchmark(level=9):
     print('  2) Monotonicity: C(xy) >= C(x)')
     print('  3) Symmetry: C(xy) = C(yx)')
     print('  4) Distributivity: C(xy) + C(z) <= C(xz) + C(yz)')
-    print("A detailed description can be found here: http://phrack.org/issues/68/15.html")
+    print("A detailed description can be found here: https://arxiv.org/abs/cs/0312044")
     print()
     print("Original (cummulated) length of data: {} bytes".format(sum(map(len, test_data))))
     print("Compression Level: {}".format(level))

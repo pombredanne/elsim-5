@@ -36,6 +36,18 @@ currently there are two objects used to store the elements.
 The first is a wrapper for the original element, the second a wrapper for the modified one.
 This should somehow be replaced and all the lookups in the dicts can be enhanced as well.
 
+Compression Method
+------------------
+
+The original publication had a benchmark included, which compression method
+is the best. Usually you will choose the fastest compression method, which gives the best
+results in NCD.
+The original publication found, that SNAPPY has these properties.
+You can use the `benchmark.py` script to test all available compressors
+for the "normal compressor" property and compression times.
+From the tests can be seen, that SNAPPY performs much better on the random data
+than for example LZMA. Also it is much faster.
+
 Projects used
 -------------
 
