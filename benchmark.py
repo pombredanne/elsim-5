@@ -22,6 +22,7 @@ import itertools
 import collections
 import time
 import random
+import click
 
 from elsim import similarity
 
@@ -126,14 +127,20 @@ def generate_random_data(seed=42):
     return [bytearray([random.randrange(0, 256) for _ in range(100)]) for _ in range(9)]
 
 
-def benchmark(level=9):
+@click.command()
+@click.option("--rand", is_flag=True, help="Test Random bytes instead of Signature strings")
+@click.option("--level", type=click.IntRange(1,9), default=9, help="Compression Level", show_default=True)
+def benchmark(rand, level):
     """
     Run compressor tests and benchmarks
 
     The compression level has only an effect on LZMA!
     """
     sim_module = similarity.Similarity()
-    test_data = generate_random_data()
+    if rand:
+        test_data = generate_random_data()
+    else:
+        test_data = TESTS_RANDOM_SIGN
 
     table_line = '  {:20s}   {:>4d}    {:>4d}   {:>8d}   {:>7.5f}'
 
