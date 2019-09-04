@@ -30,6 +30,25 @@ It uses now XREFs instead of TaintedAnalysis, which could result in different ou
 Now, Signature is a wrapper for an Analysis object and functions from the old Analysis which
 would depend on Signature are moved to Signature itself (`get_method_signature()`.
 
+History
+-------
+
+Elsim was part of the original androguard mercurial repo, hence it is older than 13th of March 2012.
+There is a [publication](http://phrack.org/issues/68/15.html) in the phrack magazine about Elsim from April 2012.
+In September 2014, Elsim was added to the Androguard git repo but removed in 2017 with the
+[big cleanup commit](https://github.com/androguard/androguard/commit/27a07fb4e0bbacd9229f76bb4ef76e7c119394aa).
+Since then Androguard has changed significantly. Finally Elsim was resurrected in 2019.
+
+Contributions
+-------------
+
+* Anthony Desnos (2014 - 2015)
+* Lircyn (2014)
+* Robert Grosse (2014)
+* Nikoli (2015)
+* Subho Halder (2015)
+* Sebastian Bachmann (2017, 2019)
+
 
 Building
 --------
