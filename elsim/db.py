@@ -19,36 +19,129 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import json
 
-from elsim.similarity import DBFormat
 from hashes.simhash import simhash
+
 from elsim import sign
 
 
-def eval_res_per_class(ret):
-    z = {}
+class DBFormat:
+    def __init__(self, filename):
+        self.filename = filename
 
-    for i in ret:
-        for j in ret[i]:
-            for k in ret[i][j]:
-                val = ret[i][j][k]
-                if len(val[0]) == 1 and val[1] > 1:
+        try:
+            with open(self.filename, "r+") as fd:
+                self.D = json.load(fd)
+        except IOError:
+            print("Impossible to open filename: " + filename)
+            self.D = dict()
+
+        self.H = {}
+        self.N = {}
+
+        for i, v in self.D.items():
+            self.H[i] = dict()
+            for j, vv in v.items():
+                if j == "NAME":
+                    self.N[i] = re.compile(vv)
                     continue
 
-                if len(val[0]) == 0:
-                    continue
+                self.H[i][j] = dict()
+                for k, vvv in vv.items():
+                    if isinstance(vvv, dict):
+                        self.H[i][j][k] = set(map(int, vvv.keys()))
 
-                if j not in z:
-                    z[j] = {}
+    def add_name(self, name, value):
+        if name not in self.D:
+            self.D[name] = {}
 
-                val_percentage = (len(val[0]) / float(val[1])) * 100
-                if (val_percentage != 0):
-                    z[j][k] = val_percentage
-    return z
+        self.D[name]["NAME"] = value
+
+    def add_element(self, name, sname, sclass, size, elem):
+        try:
+            if elem not in self.D[name][sname][sclass]:
+                self.D[name][sname][sclass][elem] = size
+                self.D[name][sname]["SIZE"] += size
+
+        except KeyError:
+            if name not in self.D:
+                self.D[name] = {}
+                self.D[name][sname] = {}
+                self.D[name][sname]["SIZE"] = 0
+                self.D[name][sname][sclass] = {}
+            elif sname not in self.D[name]:
+                self.D[name][sname] = {}
+                self.D[name][sname]["SIZE"] = 0
+                self.D[name][sname][sclass] = {}
+            elif sclass not in self.D[name][sname]:
+                self.D[name][sname][sclass] = {}
+
+            self.D[name][sname]["SIZE"] += size
+            self.D[name][sname][sclass][elem] = size
+
+    def is_present(self, elem):
+        for i in self.D:
+            if elem in self.D[i]:
+                return True, i
+        return False, None
+
+    def elems_are_presents(self, elems):
+        ret = {}
+        info = {}
+
+        for i in self.H:
+            ret[i] = {}
+            info[i] = {}
+
+            for j in self.H[i]:
+                ret[i][j] = {}
+                info[i][j] = {}
+
+                for k in self.H[i][j]:
+                    val = [self.H[i][j][k].intersection(
+                        elems), len(self.H[i][j][k]), 0, 0]
+
+                    size = 0
+                    for z in val[0]:
+                        size += self.D[i][j][k][str(z)]
+
+                    val[2] = (float(len(val[0]))/(val[1])) * 100
+                    val[3] = size
+
+                    if val[3] != 0:
+                        ret[i][j][k] = val
+
+                info[i][j]["SIZE"] = self.D[i][j]["SIZE"]
+
+        return ret, info
+
+    def classes_are_presents(self, classes):
+        m = set()
+        for j in classes:
+            for i in self.N:
+                if self.N[i].search(j) != None:
+                    m.add(i)
+        return m
+
+    def show(self):
+        for i in self.D:
+            print(i, ":")
+            for j in self.D[i]:
+                print("\t", j, len(self.D[i][j]))
+                for k in self.D[i][j]:
+                    print("\t\t", k, len(self.D[i][j][k]))
+
+    def save(self):
+        with open(self.filename, "w") as fd:
+            json.dump(self.D, fd)
 
 
 class ElsimDB:
     def __init__(self, database_path):
+        """
+        :param str database_path:
+        """
         self.db = DBFormat(database_path)
 
     def eval_res(self, ret, info, threshold=10.0):
@@ -87,6 +180,7 @@ class ElsimDB:
                 if code == None:
                     continue
 
+                #FIXME 
                 buff_list = vmx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
 
                 for i in buff_list:
@@ -115,6 +209,28 @@ class ElsimDB:
 
         return info
 
+    @staticmethod
+    def eval_res_per_class(ret):
+        z = {}
+
+        for i in ret:
+            for j in ret[i]:
+                for k in ret[i][j]:
+                    val = ret[i][j][k]
+                    if len(val[0]) == 1 and val[1] > 1:
+                        continue
+
+                    if len(val[0]) == 0:
+                        continue
+
+                    if j not in z:
+                        z[j] = {}
+
+                    val_percentage = (len(val[0]) / float(val[1])) * 100
+                    if (val_percentage != 0):
+                        z[j][k] = val_percentage
+        return z
+
     def percentages_code(self, exclude_list):
         libs = re.compile('|'.join("(" + i + ")" for i in exclude_list))
 
@@ -131,6 +247,7 @@ class ElsimDB:
                 if code == None:
                     continue
 
+                #FIXME
                 buff_list = self.vmx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
 
                 for i in buff_list:
@@ -145,7 +262,7 @@ class ElsimDB:
                 continue
 
             ret = self.db.elems_are_presents(elems_hash)
-            sort_ret = eval_res_per_class(ret)
+            sort_ret = self.eval_res_per_class(ret)
             if sort_ret == {}:
                 if libs.search(_class.get_name()) != None:
                     classes_edb_size += class_size
@@ -168,6 +285,7 @@ class ElsimDB:
                 if code == None:
                     continue
 
+                #FIXME
                 buff_list = self.vmx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
 
                 for i in buff_list:
@@ -175,7 +293,7 @@ class ElsimDB:
                     elems_hash.add(elem_hash)
 
             ret = self.db.elems_are_presents(elems_hash)
-            sort_ret = eval_res_per_class(ret)
+            sort_ret = self.eval_res_per_class(ret)
 
             if sort_ret != {}:
                 if _class.get_name() not in N:
@@ -201,7 +319,7 @@ class ElsimDB:
         return info
 
 
-class ElsimDBIn(object):
+class ElsimDBIn:
     def __init__(self, output):
         self.db = DBFormat(output)
 
@@ -226,6 +344,7 @@ class ElsimDBIn(object):
                 if method.get_length() < 50 or method.get_name() == "<clinit>" or method.get_name() == "<init>":
                     continue
 
+                #FIXME
                 buff_list = dx.get_method_signature(method, predef_sign=sign.PredefinedSignature.SEQUENCE_BB).get_list()
                 if len(set(buff_list)) == 1:
                     continue
