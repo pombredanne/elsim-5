@@ -59,7 +59,7 @@ Right now, no tests were conducted to make elsim work on Windows.
 It was only tested on Linux (Debian Stretch).
 To build elsim, you need some additional packages installed first:
 
-`apt install build-essential liblzma-dev libmuparser-dev libsnappy-dev libbz2-dev zlib1g-dev libsparsehash-dev`
+`apt install build-essential liblzma-dev lzma-dev libmuparser-dev libsnappy-dev libbz2-dev zlib1g-dev libsparsehash-dev`
 
 then use the `setup.py` to build elsim:
 

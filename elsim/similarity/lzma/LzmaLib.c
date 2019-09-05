@@ -3,8 +3,8 @@
 Igor Pavlov
 Public domain */
 
-#include "LzmaEnc.h"
-#include "LzmaDec.h"
+#include <lzma/LzmaEnc.h>
+#include <lzma/LzmaDec.h>
 #include "Alloc.h"
 #include "LzmaLib.h"
 
