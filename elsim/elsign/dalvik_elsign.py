@@ -82,8 +82,7 @@ class DalvikElsign:
         self.meth_elsign.set_sim_method(0)
         self.meth_elsign.set_threshold_low(methsim["THRESHOLD_LOW"])
         self.meth_elsign.set_threshold_high(methsim["THRESHOLD_HIGH"])
-        # SNAPPY
-        self.meth_elsign.set_ncd_compression_algorithm(5)
+        self.meth_elsign.set_ncd_compression_algorithm(similarity.Compress.BZ2.value)
 
     ################ CLASS ################
         classsim = buff["CLASSSIM"]
@@ -98,8 +97,7 @@ class DalvikElsign:
         self.class_elsign.set_sim_method(0)
         self.class_elsign.set_threshold_low(classsim["THRESHOLD_LOW"])
         self.class_elsign.set_threshold_high(classsim["THRESHOLD_HIGH"])
-        # SNAPPY
-        self.class_elsign.set_ncd_compression_algorithm(5)
+        self.class_elsign.set_ncd_compression_algorithm(similarity.Compress.BZ2.value)
 
     def add_signature(self, type_signature, x, y, z):
         ret = None
@@ -548,7 +546,7 @@ class CSignature(object):
                 nb += 1
 
         s = similarity.Similarity()
-        s.set_compress_type(similarity.Compress.SNAPPY)
+        s.set_compress_type(similarity.Compress.BZ2)
 
         self.__check_db(s, ids, meth_sim)
         self.__check_db(s, ids, class_sim)
@@ -564,7 +562,6 @@ class CSignature(object):
                         if ids_cmp not in problems:
                             s.set_compress_type(similarity.Compress.BZ2)
                             ret = s.ncd(i, j)[0]
-                            s.set_compress_type(similarity.Compress.SNAPPY)
                             print("[-] ", ids[i], ids[j], ret)
                             problems[ids_cmp] = 0
                             problems[ids[j] + ids[i]] = 0

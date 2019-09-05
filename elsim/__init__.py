@@ -267,7 +267,7 @@ class Elsim:
         if compressor:
             self.compressor = Compress.by_name(compressor.upper())
         else:
-            self.compressor = Compress.SNAPPY
+            self.compressor = Compress.BZ2
         self.sim.set_compress_type(self.compressor)
 
 

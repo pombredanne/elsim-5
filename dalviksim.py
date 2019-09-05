@@ -95,7 +95,7 @@ def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, n
 @click.version_option(ELSIM_VERSION)
 @click.option("-d", "--details", is_flag=True, help="display detailed information about the changes")
 @click.option("--diff", is_flag=True, help="Show the difference between the files. Does not work if --score is used.")
-@click.option("-c", "--compressor", default="SNAPPY", type=click.Choice([x.name for x in Compress]),
+@click.option("-c", "--compressor", default="BZ2", type=click.Choice([x.name for x in Compress]),
         show_default=True,
         show_choices=True,
         help="Set the compression method. Some methods perform better,"

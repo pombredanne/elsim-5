@@ -24,7 +24,7 @@ from elsim.similarity import Compress
 @click.command()
 @click.version_option(ELSIM_VERSION)
 @click.option("-d", "--details", is_flag=True, help="display detailed information about the changes")
-@click.option("-c", "--compressor", default="SNAPPY", type=click.Choice([x.name for x in Compress]),
+@click.option("-c", "--compressor", default="BZ2", type=click.Choice([x.name for x in Compress]),
         show_default=True,
         show_choices=True,
         help="Set the compression method")
