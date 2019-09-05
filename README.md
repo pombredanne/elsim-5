@@ -291,6 +291,9 @@ The results might lead to the opinion that the compression algorithms SMAZ, SNAP
 The best performing methods are BZ2 and LZMA.
 SNAPPY which was used as the default compression method in the old papers seems to be not very good.
 Moreover, it looks like the compression level for BZ2 and ZLIB does not really matter.
+One reason might be that BZ2 and ZLIB are block-sorting algorithms, where the level just defines the windows size.
+For example in BZ2, the level gives the window size in 100k blocks, hence the results just show that we never
+had any inputs larger than 100k length.
 For LZMA the compression level makes some difference but for levels larger than 4, the compression is very slow compared to the other methods.
 The data would suggest that the best method (in terms of idempotecy) would actually be BZ2 at compression level 2.
 SNAPPY is maybe four times faster but has less accuracy.
@@ -298,6 +301,26 @@ SNAPPY is maybe four times faster but has less accuracy.
 Yet another unanswered question is, if idempotency is the only factor influencing the result.
 It should not and also the other properties might matter. A quantitative analysis of all properties might be required to
 find the best compression method.
+
+It should also be mentioned, that Elsim does not check identical strings via a NCD of zero.
+Rather an exact compare is used to identify identical strings, hence this problem might not
+be as big as exaggerated here.
+There is also a paper covering this problem:
+
+Alfonseca, Cebrián, Ortega (2005): Common Pitfalls Using the Normalized Compression Distance: What to Watch Out for in a Compressor
+
+It can also be seen that the distance is quite stable when it comes to simple changes:
+
+    >>> s.ncd(b'hello', b'hello')  # The same string, in theory distance 0
+    0.1538461595773697
+    >>> s.ncd(b'hello', b'hallo')
+    0.23076923191547394
+    >>> s.ncd(b'hello', b'hgllo')
+    0.23076923191547394
+    >>> s.ncd(b'hello', b'hqllo')
+    0.23076923191547394
+    >>> s.ncd(b'hello', b'hbllo')
+    0.23076923191547394
 
 
 The Cesare/Xiang Signature
