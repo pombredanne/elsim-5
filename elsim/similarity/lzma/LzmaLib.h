@@ -4,7 +4,7 @@
 #ifndef __LZMA_LIB_H
 #define __LZMA_LIB_H
 
-#include <lzma/Types.h>
+#include "Types.h"
 
 #ifdef __cplusplus
 extern "C" {
