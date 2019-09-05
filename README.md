@@ -33,7 +33,7 @@ would depend on Signature are moved to Signature itself (`get_method_signature()
 History
 -------
 
-Elsim was part of the original androguard mercurial repo, hence it is older than 13th of March 2012.
+Elsim was first uploaded as a standalone library to code.google.com in March 2012. 
 There is a [publication](http://phrack.org/issues/68/15.html) in the phrack magazine about Elsim from April 2012.
 In September 2014, Elsim was added to the Androguard git repo but removed in 2017 with the
 [big cleanup commit](https://github.com/androguard/androguard/commit/27a07fb4e0bbacd9229f76bb4ef76e7c119394aa).
@@ -42,7 +42,9 @@ Since then Androguard has changed significantly. Finally Elsim was resurrected i
 Contributions
 -------------
 
-* Anthony Desnos (2014 - 2015)
+Ordered by Date:
+
+* Anthony Desnos (2012 - 2015)
 * Lircyn (2014)
 * Robert Grosse (2014)
 * Nikoli (2015)
@@ -193,3 +195,9 @@ elsim contains (parts of) the following open source projects:
 * The C clustering library: Copyright (2002) Michiel Jan Laurens de Hoon
 * LZMA: Public Domain (2009) Igor Pavlov
 * [SMAZ](https://github.com/antirez/smaz): Copyright (2006) Salvatore Sanfilippo, released as BSD 3-Clause
+
+Licence
+-------
+
+Elsim is released as LGPL (v3 or later).
+
