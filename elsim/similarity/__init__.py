@@ -169,6 +169,12 @@ class Similarity:
         It seems to be based on the paper
         Bennett, Charles H.: Logical depth and physical complexity (1988)
 
+        .. warning::
+            This function only works with ZLIB and SNAPPY as compressor!
+            All other compressors do not have a de-compress implementation!
+            If you ever use the bennett function directly from libsimilarity,
+            and use other compressors, you are likely to get some segfaults!
+
         The implementation takes the input string and compresses it
         with the given compression method.
         Than the time is measured how long the de-compression of the
@@ -188,6 +194,11 @@ class Similarity:
         :param bytes s1: input string
         :rtype: float
         """
+        # Prevent segfaults
+        if self.ctype not in (Compress.ZLIB, Compress.SNAPPY):
+            raise ValueError("Can not use logical depth estimator with "
+                             "other compression type than ZLIB or SNAPPY!")
+
         return ls.bennett(self.level, s1)
 
     def entropy(self, s1):
