@@ -138,6 +138,10 @@ class Similarity:
         It seems this is a implementation of CMID which is explained in:
         Borello, Jean-Marie: Étude du métamorphisme viral: modélisation, conception et détection (2011)
 
+        .. warning::
+            There is not much information about this metric, hence it should
+            be used with caution!
+
         :param bytes s1: The first string
         :param bytes s2: The second string
         """
@@ -155,6 +159,7 @@ class Similarity:
         compression method used.
 
         :param bytes s1: input string
+        :rtype: int
         """
         return ls.kolmogorov(self.level, s1)
 
@@ -164,7 +169,24 @@ class Similarity:
         It seems to be based on the paper
         Bennett, Charles H.: Logical depth and physical complexity (1988)
 
+        The implementation takes the input string and compresses it
+        with the given compression method.
+        Than the time is measured how long the de-compression of the
+        string takes. This is done a thousand times and the average
+        value is returned.
+        This time value has the unit "CPU cycles", as this measure
+        is taken before and after de-compression.
+
+        This not only means that the result might differ depending
+        on the load of the machine, it will also return different
+        results per CPU.
+
+        .. warning::
+            There is not much information about this metric, hence it should
+            be used with caution!
+
         :param bytes s1: input string
+        :rtype: float
         """
         return ls.bennett(self.level, s1)
 
@@ -178,13 +200,6 @@ class Similarity:
         """
         # FIXME: use the cache again
         return ls.entropy(s1)
-
-    def RDTSC(self):
-        """
-        Returns the value in the Timestamp Counter
-        which is a CPU register
-        """
-        return ls.RDTSC()
 
     def levenshtein(self, s1, s2):
         """

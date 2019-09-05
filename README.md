@@ -112,6 +112,15 @@ The native elsign module depends on the similarity module which makes it super h
 This should be looked at and properly implemented, so that you dont need a ton of files
 to compile for elsign but only the elsign module ifself.
 
+There is an implementation of Bennett Complexity (Logical Depth).
+But it is flawed, as it works only with certain compressors.
+It is also questionable where this implementation comes from.
+
+There is an implementation of CMID, where it also questionable for what
+is shall be used and of it produces correct results. CMID seems to be
+a very unfamiliar distance measure which is only used in one thesis
+which is in french unfortunately.
+
 Compression Method
 ------------------
 

@@ -522,14 +522,6 @@ static PyObject *similarity_bennett(PyObject *self, PyObject *args) {
     return ret;
 }
 
-static PyObject *similarity_RDTSC(PyObject *self, PyObject *args) {
-    // takes no argumetn and returns double
-    if (!PyArg_ParseTuple(args, ""))
-        return NULL;
-    PyObject *ret = Py_BuildValue("d", RDTSC());
-    return ret;
-}
-
 static PyObject *similarity_ncd(PyObject *self, PyObject *args) {
     // takes level and two byte inputs and optional two compressed lengths, returns float and both compressed sizes
     Py_buffer s1;
@@ -632,7 +624,6 @@ static PyMethodDef similarity_methods[] = {
     {"levenshtein", similarity_levenshtein, METH_VARARGS, "Calculte Levenshtein Distance between two inputs"},
     {"kolmogorov", similarity_kolmogorov, METH_VARARGS, "Estimate Kolmogorov Complexity based on compression"},
     {"bennett", similarity_bennett, METH_VARARGS, "Estimate Logical Depth (Bennett) by compression and runtime"},
-    {"RDTSC", similarity_RDTSC, METH_VARARGS, "Return the current Time Stamp Counter register value"},
     {"ncd", similarity_ncd, METH_VARARGS, "Calculate Normalized Compression Distance for two inputs"},
     {"ncs", similarity_ncs, METH_VARARGS, "Calculate Normaluzed Compression Similarity for two inputs"},
     {"cmid", similarity_cmid, METH_VARARGS, "Calculate Compression based Mututal Inclusuion Degree for two inputs"},
