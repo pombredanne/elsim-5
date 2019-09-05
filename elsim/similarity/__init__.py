@@ -47,6 +47,8 @@ class Compress(IntEnum):
 
 
 class Similarity:
+    # FIXME: some functions simply return -1 on error.
+    # This should be fixed and a proper exception must be thrown!
     """
     The Similarity class capsules all important functions for calculating
     similarities.
@@ -76,6 +78,7 @@ class Similarity:
         Returns the length of the compressed string
 
         :param bytes s1: the string to compress
+        :rtype: int
         """
         return ls.compress(self.level, s1)
 
@@ -84,8 +87,22 @@ class Similarity:
         Calculate Normalized Compression Distance (NCD)
 
         The value is a floating point number between 0 and 1.
-        0 describes the lowest distance, i.e. the two inputs are equal,
-        while 1 describes a maximal distance.
+        0 describes the lowest distance, while 1 describes a maximal distance.
+
+        The input must not be empty.
+        
+        .. warning::
+            two identical inputs might not compute a NCD of zero!
+            The reason lies in the properties of the compressor used.
+            It can not simply be assumed that |C(xx)| = |C(x)|, even though
+            this should be one property for a normal compressor (Idempotency).
+            For example, the String 'hello' compressed with ZLIB results in
+            a compressed string of length 13. But compressing 'hellohello' just
+            has a length of 15. Hence, the NCD will be (15 - 13) / 13 = 0.1538!
+
+        In the tests, no compression algorithm has the property of idempotency,
+        hence the NCD value which is calculated by this method will always
+        underestimate. That means the distance will always be greater than the actual distance!
 
         :param bytes s1: The first string
         :param bytes s2: The second string
@@ -101,6 +118,11 @@ class Similarity:
         """
         Calculate Normalized Compression Similarity
         which is defined as 1 - ncd(s1, s2).
+
+        .. warning::
+            The same problem applies as to the NCD:
+            The result will always be smaller than the actual similarity!
+            Two equal strings will not have a similarity of 1.
 
         :param bytes s1: The first string
         :param bytes s2: The second string
@@ -151,6 +173,8 @@ class Similarity:
         Calculate the (classical) Shannon Entropy
 
         :param bytes s1: input
+        :returns: Shannon Entropy, a real number between 0 and 8
+        :rtype: float
         """
         # FIXME: use the cache again
         return ls.entropy(s1)
@@ -182,11 +206,34 @@ class Similarity:
 
     def set_level(self, level):
         """
-        Set the compression level, if compression supports it
+        Set the compression level, if compression supports it.
+        The level works only with the following compression methods:
 
-        Usually this is an integer value between 0 and 9
+        * BZ2: 1 <= level <= 9
+        * LZMA: 0 <= level <= 9
+        * ZLIB: 0 <= level <= 9
 
-        :param int level: compression level
+        For all other compressor types, the level has simply no effect.
+        
+        Note, that for ZLIB, a compression level of 0 is equal to no compression
+        and the data is just copied!
+        For ZLIB -1 can be specified to use the default compression method.
+        Both methods are not possible with this method, as we strictly enforce
+        compression levels between 1 and 9.
+
+        .. warning::
+            There are no sanity checks here! Except that the value is enforced
+            to be between 1 and 9 - this means you can not use the level 0 on LZMA and ZLIB.
+            If you specify a illegal compression level for a method,
+            the functions will silently fail!
+
+            The default level is set to 9 in this class, which will cause very heavy CPU loads
+            in the case of LZMA! If you are using LZMA, you should probably reduce the level
+            to about 5 or 6.
+
+        :param int level: compression level, 1 <= level <= 9
         """
+        if not (1 <= level <= 9):
+            raise ValueError("For your own safety, the compression level must be 1 <= level <= 9!")
         self.level = level
 

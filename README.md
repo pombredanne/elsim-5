@@ -28,7 +28,7 @@ Elsim also required certain functions from androguard, especially the `sign` mod
 This module was moved from androguard to elsim and also heavily refactored.
 It uses now XREFs instead of TaintedAnalysis, which could result in different output.
 Now, Signature is a wrapper for an Analysis object and functions from the old Analysis which
-would depend on Signature are moved to Signature itself (`get_method_signature()`.
+would depend on Signature are moved to Signature itself (`get_method_signature()`).
 
 History
 -------
@@ -77,7 +77,7 @@ Changes to original library
 * Fixed broken entropy calculation
 * Changed filter system in Elsim (will probably change some more)
 * Renamed modules and moved them around
-* removed simhash module, as it is in pypi
+* removed simhash module from elsim codebase, as it is in pypi
 * `elsim/db` was unified and many methods which seems to be never used and seems to were broken anyways were removed
 
 Broken and not (yet) fixed
@@ -193,7 +193,7 @@ elsim contains (parts of) the following open source projects:
 * Wu Manber's Multi-Pattern Search Algorithm: Copyright (2008) One Unified
 * Aho Corasick implementation: Copyright (2007) Tideway Systems Limited
 * The C clustering library: Copyright (2002) Michiel Jan Laurens de Hoon
-* LZMA: Public Domain (2009) Igor Pavlov
+* [LZMA](https://www.7-zip.org/sdk.html): Public Domain (2009) Igor Pavlov
 * [SMAZ](https://github.com/antirez/smaz): Copyright (2006) Salvatore Sanfilippo, released as BSD 3-Clause
 
 Licence

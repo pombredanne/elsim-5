@@ -17,7 +17,7 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 import unittest
 
-from elsim.similarity import Similarity
+from elsim.similarity import Similarity, Compress
 
 
 class SimilarityTestsNative(unittest.TestCase):
@@ -44,4 +44,74 @@ class SimilarityTestsNative(unittest.TestCase):
         self.assertAlmostEqual(s.entropy(bytearray(range(128, 256))), 7.0)
         self.assertAlmostEqual(s.entropy(bytearray(range(0, 256, 2))), 7.0)
         self.assertAlmostEqual(s.entropy(bytearray(range(0, 256, 2)) * 2), 7.0)
+
+    def test_compression(self):
+        """
+        Test if compression works and we get some result
+        """
+        s = Similarity()
+
+        for comp in Compress:
+            s.set_compress_type(comp)
+
+            if comp in (Compress.BZ2, Compress.ZLIB, Compress.LZMA):
+                levels = range(1, 10)
+            else:
+                levels = [9]
+
+            for level in levels:
+                s.set_level(level)
+                input_string = 'hello world -> {} / {}'.format(comp.name, level)
+                res = s.compress(input_string.encode('ascii'))
+                print(comp, level, res, len(input_string))
+                self.assertTrue(res > 0)
+
+        with self.assertRaises(ValueError):
+            s.set_level(0)
+
+        with self.assertRaises(ValueError):
+            s.set_level(-1)
+
+        with self.assertRaises(ValueError):
+            s.set_level(10)
+
+        with self.assertRaises(ValueError):
+            s.set_level(9999)
+
+    def test_levenshtein(self):
+        """tests the levenshtein distance"""
+        s = Similarity()
+
+        self.assertEqual(s.levenshtein(b'hello', b'hello'), 0)
+        self.assertEqual(s.levenshtein(b'hello', b'hallo'), 1)
+        self.assertEqual(s.levenshtein(b'Tier', b'Tor'), 2)  # Wikipedia
+        self.assertEqual(s.levenshtein(b'kitten', b'sitting'), 3)  # Wikipedia
+        self.assertEqual(s.levenshtein(b'flaw', b'lawn'), 2)  # Wikipedia
+        self.assertEqual(s.levenshtein(b'FLOMAX', b'VOLMAX'), 3)
+        self.assertEqual(s.levenshtein(b'GILY', b'GEELY'), 2)
+        self.assertEqual(s.levenshtein(b'HONDA', b'HYUNDAI'), 3)
+        self.assertEqual(s.levenshtein(b'lsjdflksdjfkl', b'sdfljsdlkjglksdahglksdhgkls'), 17)
+
+    def test_ncd(self):
+        """tests if NCD/NCS are working"""
+        s = Similarity()
+
+        mystr = b'hello'
+
+        for x in Compress:
+            s.set_compress_type(x)
+            if x in (Compress.BZ2, Compress.ZLIB, Compress.LZMA):
+                levels = range(1, 10)
+            else:
+                levels = [9]
+
+            for level in levels:
+                s.set_level(level)
+
+                s1 = s.compress(mystr)
+                s2 = s.compress(mystr * 2)
+                self.assertGreater(s1, 0)
+                self.assertGreater(s2, 0)
+                self.assertAlmostEqual(s.ncd(mystr, mystr), (s2 - s1) / s1)
+                self.assertAlmostEqual(s.ncs(mystr, mystr), 1.0 - ((s2 - s1) / s1))
 
