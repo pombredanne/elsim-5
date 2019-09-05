@@ -10,7 +10,7 @@ Welcome to Elsim's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-    modules
+   modules
 
 
 
