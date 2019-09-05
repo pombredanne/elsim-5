@@ -24,10 +24,12 @@ setup(
     description='Elsim is a library designed to detect similar content in files, especially in the context of Android',
     packages=find_packages(),
     install_requires=[
-        "androguard>=3.4.0",
+        "androguard>=3.4.0",  # currently this is the master from git!
         "python-hashes>=0.2",  # only available via `pip install git+https://github.com/sean-public/python-hashes` right now :(
         "click",
         "murmurhash3",
+        "tqdm",
+        "sphinx>=2.2.0",  # for docs only
         "numpy",  # only used once, not sure if actual dependency or just some optional stuff
         "sklearn",  # only used once, not sure if actual dependency or just some optional stuff
     ],

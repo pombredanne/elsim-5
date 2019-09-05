@@ -20,12 +20,13 @@ import collections
 from operator import itemgetter
 import time
 import random
-import click
 import math
+import sys
 
 from androguard.misc import AnalyzeAPK
 from androguard.core.androconf import show_logging
 from tqdm import tqdm
+import click
 
 from elsim import similarity
 from elsim.sign import Signature
@@ -146,6 +147,11 @@ def test_idempotency_quant(mystr):
 
             tic = time.time() * 1000
             s1 = s.compress(mystr)
+            if s1 <= 0:
+                # bad string?!
+                print("ERROR IN STRING ({}): '{}'".format(s1, repr(mystr)), file=sys.stderr)
+                continue
+
             s2 = s.compress(mystr * 2)
             toc = time.time() * 1000
             results[(x, level)] = (s1, s2, (s2 - s1) / s1, s2 / s1, toc - tic)
