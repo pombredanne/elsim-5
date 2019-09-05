@@ -185,6 +185,32 @@ From that output, I would always use XZ as it gives the highest similarity.
 This test should be performed again with two APKs which are different in a defined number of items to investigate the changes correctly!
 
 
+The thing with NCD
+------------------
+
+NCD is not a fixed value but just an approximation, which heavily depends
+on the compression method.
+The problem with NCD is, that is solely uses the lengths of the compressed
+strings and gives no answer to how similar two strings are in terms of
+semantic.
+Furthermore, all tested compression algorithms fail at the idempotency test.
+They might be close but there is not a single observed case where it holds true.
+If you think about it, it actually must be the case, as all tested compression
+algorithms are loss-less, hence the information that the string is two times
+the first string, must be coded somewhere. One exception might be compression
+algorithms using fixed size length fields.
+
+But, if the property of idempotency is not given, NCD can never be zero
+as |C(xx)| > |C(x)|.
+This means again, that the NCD measure will always overestimate the distance.
+
+**FIXME: Further Research Required**
+
+A solution to this problem seems to be the thresholding of values inside Elsim.
+Right now, the threshold is set to be 0.2, which is very close to results we got
+from testing two equal random strings with NCD.
+
+
 Projects used
 -------------
 
