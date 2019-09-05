@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
-# This file is part of Elsim.
+# This file is part of Elsim
 #
-# Copyright (C) 2012, Anthony Desnos <desnos at t0t0.fr>
+# Copyright (C) 2019, Sebastian Bachmann <hello at reox.at>
 # All rights reserved.
 #
 # Elsim is free software: you can redistribute it and/or modify
@@ -17,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
-
 import itertools
 import collections
 import time
