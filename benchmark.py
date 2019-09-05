@@ -17,11 +17,18 @@
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 import itertools
 import collections
+from operator import itemgetter
 import time
 import random
 import click
+import math
+
+from androguard.misc import AnalyzeAPK
+from androguard.core.androconf import show_logging
+from tqdm import tqdm
 
 from elsim import similarity
+from elsim.sign import Signature
 
 
 TESTS_RANDOM_SIGN = [b"B[F1]",
@@ -124,7 +131,89 @@ def generate_random_data(seed=42):
     return [bytearray([random.randrange(0, 256) for _ in range(100)]) for _ in range(9)]
 
 
-@click.command()
+def test_idempotency_quant(mystr):
+    s = similarity.Similarity()
+    results = dict()
+    for x in similarity.Compress:
+        s.set_compress_type(x)
+        if x in (similarity.Compress.BZ2, similarity.Compress.ZLIB, similarity.Compress.LZMA):
+            levels = range(1, 10)
+        else:
+            levels = [9]
+
+        for level in levels:
+            s.set_level(level)
+
+            tic = time.time() * 1000
+            s1 = s.compress(mystr)
+            s2 = s.compress(mystr * 2)
+            toc = time.time() * 1000
+            results[(x, level)] = (s1, s2, (s2 - s1) / s1, s2 / s1, toc - tic)
+    # get the compression method with the lowest ratio if s2 / s1
+    return sorted(results.items(), key=lambda x: x[1][3])
+
+
+def print_res(results):
+    r = []
+    for k, v in results.items():
+        average = sum(map(itemgetter(3), v)) / len(v)
+        std = math.sqrt(sum(map(lambda x: (x - average)**2, map(itemgetter(3), v))) / (len(v) - 1))
+
+        average_time = sum(map(itemgetter(4), v)) / len(v)
+        std_time = math.sqrt(sum(map(lambda x: (x - average_time)**2, map(itemgetter(4), v))) / (len(v) - 1))
+
+        r.append((k[0].name, k[1], average, std, average_time, std_time))
+
+    print("Returns the compression algorithms plus the average ratio of itempotency and average time in ms")
+    for l in sorted(r, key=itemgetter(2)):
+        print("{:15s} @{}: {:8.6f}({:8.6f}) ... {:8.6f}({:8.6f})".format(*l))
+
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument('apk', nargs=-1)
+def compression(apk):
+    """
+    Test idempotency on actual APK files and return a ranking of compression algorithms
+
+    This might be very slow and take up to some hours per APK given!
+    """
+    show_logging()
+
+    overall_results = collections.defaultdict(list)
+    overall_results_strings = collections.defaultdict(list)
+    for f in apk:
+        print("-->", f)
+        _, _, dx = AnalyzeAPK(f)
+        sdx = Signature(dx)
+
+        for s in tqdm(list(dx.strings.keys())):
+            if s == b'':
+                continue
+            for k, v in test_idempotency_quant(s):
+                overall_results_strings[k].append(v)
+
+        for m in tqdm(list(dx.find_methods(no_external=True))):
+            realmethod = m.get_method()
+            sig = sdx.get_method_signature(realmethod, predef_sign="L0_4").get_string()
+            if sig == b'':
+                continue
+            for k, v in test_idempotency_quant(sig):
+                overall_results[k].append(v)
+
+    print("----> RESULTS FOR STRING COMPRESSION")
+    print_res(overall_results_strings)
+
+    print("----> RESULTS FOR METHOD COMPRESSION")
+    print_res(overall_results_strings)
+
+
+@cli.command()
 @click.option("--rand", is_flag=True, help="Test Random bytes instead of Signature strings")
 @click.option("--level", type=click.IntRange(1,9), default=9, help="Compression Level", show_default=True)
 def benchmark(rand, level):
@@ -177,4 +266,4 @@ def benchmark(rand, level):
 
 
 if __name__ == "__main__":
-    benchmark()
+    cli()

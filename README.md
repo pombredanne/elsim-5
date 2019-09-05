@@ -210,6 +210,120 @@ A solution to this problem seems to be the thresholding of values inside Elsim.
 Right now, the threshold is set to be 0.2, which is very close to results we got
 from testing two equal random strings with NCD.
 
+Yet another question regards the compression method.
+As we know, no compression method is able to fulfill the idempotecy property,
+but we can get close.
+The test is to take some strings we expect to work with and calculate both |C(x)| and |C(xx)|.
+Next, we calculate the ratio of the two, namely |C(xx)| / |C(x)|.
+This ratio will always be larger than 1, but the closer it is by one, better the compression method is.
+A test using some APK files and calculating it for all strings as well as all methods using the Signature method
+leads the following results (Numbers give `Mean(StdDeviation)`):
+
+    String Compression (n = 1907)
+                        |C(xx)|/|C(x)|     Time [ms]
+    BZ2             @2: 1.0881(0.0398) ... 0.0245(0.0221)
+    BZ2             @7: 1.0881(0.0398) ... 0.0199(0.0204)
+    BZ2             @4: 1.0881(0.0398) ... 0.0221(0.0207)
+    BZ2             @5: 1.0881(0.0398) ... 0.0210(0.0203)
+    BZ2             @1: 1.0881(0.0398) ... 0.0351(0.0244)
+    BZ2             @8: 1.0881(0.0398) ... 0.0192(0.0198)
+    BZ2             @3: 1.0881(0.0398) ... 0.0226(0.0210)
+    BZ2             @6: 1.0881(0.0398) ... 0.0202(0.0204)
+    BZ2             @9: 1.0881(0.0398) ... 0.0190(0.0197)
+    LZMA            @9: 1.1034(0.0575) ... 55.0540(0.5760)
+    LZMA            @7: 1.1034(0.0575) ... 55.0250(0.5629)
+    LZMA            @5: 1.1034(0.0575) ... 27.6373(0.4694)
+    LZMA            @8: 1.1034(0.0575) ... 55.0339(0.5810)
+    LZMA            @6: 1.1034(0.0575) ... 55.0691(0.5459)
+    LZMA            @2: 1.1054(0.0594) ... 0.2580(0.0143)
+    LZMA            @3: 1.1054(0.0594) ... 0.6889(0.0338)
+    LZMA            @1: 1.1054(0.0594) ... 0.1991(0.0121)
+    LZMA            @4: 1.1054(0.0594) ... 2.4724(0.1216)
+    ZLIB            @7: 1.1111(0.0398) ... 0.0117(0.0030)
+    ZLIB            @8: 1.1111(0.0398) ... 0.0116(0.0032)
+    ZLIB            @9: 1.1111(0.0398) ... 0.0119(0.0036)
+    ZLIB            @5: 1.1111(0.0398) ... 0.0119(0.0030)
+    ZLIB            @6: 1.1111(0.0398) ... 0.0117(0.0029)
+    ZLIB            @4: 1.1111(0.0398) ... 0.0125(0.0027)
+    ZLIB            @3: 1.1112(0.0397) ... 0.0123(0.0025)
+    ZLIB            @2: 1.1112(0.0397) ... 0.0136(0.0029)
+    ZLIB            @1: 1.1113(0.0397) ... 0.0335(0.0047)
+    XZ              @9: 1.1267(0.0501) ... 0.3989(0.1575)
+    VCBLOCKSORT     @9: 1.3474(0.0480) ... 0.0386(0.0202)
+    SNAPPY          @9: 1.3857(0.3389) ... 0.0062(0.0014)
+    SMAZ            @9: 1.9709(0.0806) ... 0.0065(0.0052)
+
+    Method compression (n = 10653)
+    BZ2             @2: 1.0881(0.0398) ... 0.0245(0.0221)
+    BZ2             @7: 1.0881(0.0398) ... 0.0199(0.0204)
+    BZ2             @4: 1.0881(0.0398) ... 0.0221(0.0207)
+    BZ2             @5: 1.0881(0.0398) ... 0.0210(0.0203)
+    BZ2             @1: 1.0881(0.0398) ... 0.0351(0.0244)
+    BZ2             @8: 1.0881(0.0398) ... 0.0192(0.0198)
+    BZ2             @3: 1.0881(0.0398) ... 0.0226(0.0210)
+    BZ2             @6: 1.0881(0.0398) ... 0.0202(0.0204)
+    BZ2             @9: 1.0881(0.0398) ... 0.0190(0.0197)
+    LZMA            @9: 1.1034(0.0575) ... 55.0540(0.5760)
+    LZMA            @7: 1.1034(0.0575) ... 55.0250(0.5629)
+    LZMA            @5: 1.1034(0.0575) ... 27.6373(0.4694)
+    LZMA            @8: 1.1034(0.0575) ... 55.0339(0.5810)
+    LZMA            @6: 1.1034(0.0575) ... 55.0691(0.5459)
+    LZMA            @2: 1.1054(0.0594) ... 0.2580(0.0143)
+    LZMA            @3: 1.1054(0.0594) ... 0.6889(0.0338)
+    LZMA            @1: 1.1054(0.0594) ... 0.1991(0.0121)
+    LZMA            @4: 1.1054(0.0594) ... 2.4724(0.1216)
+    ZLIB            @7: 1.1111(0.0398) ... 0.0117(0.0030)
+    ZLIB            @8: 1.1111(0.0398) ... 0.0116(0.0032)
+    ZLIB            @9: 1.1111(0.0398) ... 0.0119(0.0036)
+    ZLIB            @5: 1.1111(0.0398) ... 0.0119(0.0030)
+    ZLIB            @6: 1.1111(0.0398) ... 0.0117(0.0029)
+    ZLIB            @4: 1.1111(0.0398) ... 0.0125(0.0027)
+    ZLIB            @3: 1.1112(0.0397) ... 0.0123(0.0025)
+    ZLIB            @2: 1.1112(0.0397) ... 0.0136(0.0029)
+    ZLIB            @1: 1.1113(0.0397) ... 0.0335(0.0047)
+    XZ              @9: 1.1267(0.0501) ... 0.3989(0.1575)
+    VCBLOCKSORT     @9: 1.3474(0.0480) ... 0.0386(0.0202)
+    SNAPPY          @9: 1.3857(0.3389) ... 0.0062(0.0014)
+    SMAZ            @9: 1.9709(0.0806) ... 0.0065(0.0052)
+
+
+The results might lead to the opinion that the compression algorithms SMAZ, SNAPPY and VCBLOCKSORT are quite useless.
+The best performing methods are BZ2 and LZMA.
+SNAPPY which was used as the default compression method in the old papers seems to be not very good.
+Moreover, it looks like the compression level for BZ2 and ZLIB does not really matter.
+For LZMA the compression level makes some difference but for levels larger than 4, the compression is very slow compared to the other methods.
+The data would suggest that the best method (in terms of idempotecy) would actually be BZ2 at compression level 2.
+SNAPPY is maybe four times faster but has less accuracy.
+
+Yet another unanswered question is, if idempotency is the only factor influencing the result.
+It should not and also the other properties might matter. A quantitative analysis of all properties might be required to
+find the best compression method.
+
+
+The Cesare/Xiang Signature
+--------------------------
+
+One core feature of the Dalvik comparison is the use of a special grammar to normalize bytecode.
+The idea of this grammar is certainly to provide a better starting point for compression,
+instead of passing the raw bytecode - which is by its properties usually very high in entropy.
+A low entropy string can usually compressed very well.
+
+One disadvantage of the method is, that only the structure of the bytecode is looked at
+and the content is lost. There are signature methods to provide some semantic information
+but it is not used for most of the cases.
+That means, that two methods which are dissimilar in their function might be identical in their
+structure.
+This might not be a problem but would be an interesting topic on its own for further investigations.
+
+
+Simhash based lookups
+---------------------
+
+`androdb.py` uses simhash to lookup similar entries instead of using a n times m matrix of entries
+with NCD. This is actually similar to the method described by [quarkslab](https://blog.quarkslab.com/android-application-diffing-engine-overview.html).
+
+Androdb might be very slow for large datasets though.
+
 
 Projects used
 -------------
