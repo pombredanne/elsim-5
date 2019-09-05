@@ -506,7 +506,7 @@ class Elsim:
         return list(self.filters[SIMILARITY_SORT_ELEMENTS][i])[0]
 
     def _similarity_threshold(self, value):
-        # This basically sets the distance to maximum if a certain value is reached
+        """This basically sets the distance to maximum if a certain value is reached"""
         # TODO: I do not fully understand the rationale behind this...
         return 1.0 if value >= self.similarity_threshold else value
 

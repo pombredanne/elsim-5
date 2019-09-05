@@ -102,9 +102,6 @@ Many of the used compression libraries are already in the python's standard libr
 These are for example `lzma`, `zlib` and `bz2`.
 The question is also how much faster is the C code in reality.
 
-Unfortunately, we have no idea what kind of algorithm `VCBLOCKSORT` is. It seems to only occur in elsim
-and has no description.
-
 The androdb tool seems to be a nice idea but it probably needs more work.
 Also the database interface seems to be too complicated. One should consider writing another database
 interface in SQL or another better database than the complicated dict madness.
@@ -353,11 +350,12 @@ Projects used
 
 elsim contains (parts of) the following open source projects:
 
-* Wu Manber's Multi-Pattern Search Algorithm: Copyright (2008) One Unified
-* Aho Corasick implementation: Copyright (2007) Tideway Systems Limited
-* The C clustering library: Copyright (2002) Michiel Jan Laurens de Hoon
-* [LZMA](https://www.7-zip.org/sdk.html): Public Domain (2009) Igor Pavlov
-* [SMAZ](https://github.com/antirez/smaz): Copyright (2006) Salvatore Sanfilippo, released as BSD 3-Clause
+* Wu Manber's Multi-Pattern Search Algorithm: Copyright (C) 2008, One Unified
+* Aho Corasick implementation: Copyright (C) 2007, Tideway Systems Limited
+* The C clustering library: Copyright (C) 2002, Michiel Jan Laurens de Hoon
+* [(classic) libcomplearn](https://github.com/rudi-cilibrasi/classic-complearn) (vcblocksort): Copyright (C) 2008, Rudi Cilibrasi
+* [LZMA](https://www.7-zip.org/sdk.html): Public Domain 2009, Igor Pavlov
+* [SMAZ](https://github.com/antirez/smaz): Copyright (C) 2006, Salvatore Sanfilippo
 
 Licence
 -------
