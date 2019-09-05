@@ -199,6 +199,7 @@ class Similarity:
             raise ValueError("Can not use logical depth estimator with "
                              "other compression type than ZLIB or SNAPPY!")
 
+        # FIXME: bennett segfaults with SNAPPY
         return ls.bennett(self.level, s1)
 
     def entropy(self, s1):
