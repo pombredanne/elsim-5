@@ -137,7 +137,7 @@ Uses the deflate mode and `level` can be set.
 ### LZMA
 
 Uses the [LZMA SDK](https://www.7-zip.org/sdk.html), which is included in a version dated from 2008, to compress data.
-All parameters like `dictSize`, `lc, `lp`, `pb`, `fb` and `numThreads` are set to default,
+All parameters like `dictSize`, `lc`, `lp`, `pb`, `fb` and `numThreads` are set to default,
 `level` can be adjusted.
 
 ### XZ
