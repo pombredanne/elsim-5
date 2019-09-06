@@ -190,6 +190,18 @@ Here is a quick demo using the fdroid client in two similar versions:
 From that output, I would always use XZ as it gives the highest similarity.
 This test should be performed again with two APKs which are different in a defined number of items to investigate the changes correctly!
 
+Size limits of Compression Method
+---------------------------------
+
+Apparently, there are limitations to the sizes you can pass to a compressor.
+This only plays a role, if the compressed data is larger than the input data
+and this size exceeds 1000k bytes.
+Some compression algorithms handle this elegantly, others like SMAZ or SNAPPY will simply segfault.
+It is safe to assume that generic inputs up to about 900k byte are safe from this.
+
+Note, that this might lead to unwanted buffer overflows and exploitability.
+Someone should fix this...
+
 
 The thing with NCD
 ------------------

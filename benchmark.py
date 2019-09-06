@@ -149,7 +149,7 @@ def test_idempotency_quant(mystr):
             s1 = s.compress(mystr)
             if s1 <= 0:
                 # bad string?!
-                print("ERROR IN STRING ({}): '{}'".format(s1, repr(mystr)), file=sys.stderr)
+                print("ERROR IN STRING ({}): '{}...'".format(s1, repr(mystr[:20])), file=sys.stderr)
                 continue
 
             s2 = s.compress(mystr * 2)
@@ -193,6 +193,19 @@ def compression(apk):
 
     overall_results = collections.defaultdict(list)
     overall_results_strings = collections.defaultdict(list)
+
+    if apk == ():
+        # Run a test on random data
+        for _ in tqdm(range(10000)):
+            # Go way beyond the block size
+            b = bytearray([random.randrange(0, 256) for _ in range(100000)])
+            for k, v in test_idempotency_quant(b):
+                overall_results[k].append(v)
+
+        print("----> RESULTS FOR BINARY COMPRESSION")
+        print_res(overall_results)
+        return
+
     for f in apk:
         print("-->", f)
         _, _, dx = AnalyzeAPK(f)
@@ -216,7 +229,7 @@ def compression(apk):
     print_res(overall_results_strings)
 
     print("----> RESULTS FOR METHOD COMPRESSION")
-    print_res(overall_results_strings)
+    print_res(overall_results)
 
 
 @cli.command()

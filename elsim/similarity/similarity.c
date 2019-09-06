@@ -110,6 +110,13 @@ size_t compress(int level, void *orig, size_t size_orig)
     int ret;
     void *tmp_buff;
 
+    // FIXME: BufferOverflow can happen here!!!
+    // If the compressed buffer is larger than the uncompressed,
+    // it will not fit the buffer and produce segfaults
+    // in the worst case.
+    // Some compression methods do not fail here and return a "output buffer full"
+    // message (like bz2 or zlib)...
+    // You need to make sure that the output will ALWAYS fit the buffer!
     tmp_buff = alloc_buff( size_orig, 0, &size_tmp_buff, &context );
     s1 = size_tmp_buff;
 
@@ -460,6 +467,11 @@ static PyObject *similarity_compress(PyObject *self, PyObject *args) {
         return NULL;
 
     size_t res = compress(level, data.buf, data.len);
+    if (res == -1) {
+        // ERROR happend! FIXME: would be nice to know what error exactly...
+        PyErr_SetString(PyExc_Exception, "An error occured during compression");
+        return NULL;
+    }
     PyObject *ret = Py_BuildValue("n", res);
     PyBuffer_Release(&data);
     return ret;
