@@ -196,7 +196,7 @@ def compression(apk):
 
     if apk == ():
         # Run a test on random data
-        for _ in tqdm(range(10000)):
+        for _ in tqdm(range(1000)):
             # Go way beyond the block size
             b = bytearray([random.randrange(0, 256) for _ in range(100000)])
             for k, v in test_idempotency_quant(b):
