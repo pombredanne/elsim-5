@@ -124,6 +124,48 @@ which is in french unfortunately.
 Compression Method
 ------------------
 
+### BZ2
+
+Uses the [bzip2](https://packages.debian.org/source/sid/bzip2) library, which must be installed externally, to compress data.
+`workFactor` is fixed to 30, `level` is equal to the parameter `blockSize100k`.
+
+### ZLIB
+
+Uses the [zlib](https://packages.debian.org/source/sid/zlib), which must be installed externally, to compress data.
+Uses the deflate mode and `level` can be set.
+
+### LZMA
+
+Uses the [LZMA SDK](https://www.7-zip.org/sdk.html), which is included in a version dated from 2008, to compress data.
+All parameters like `dictSize`, `lc, `lp`, `pb`, `fb` and `numThreads` are set to default,
+`level` can be adjusted.
+
+### XZ
+
+Uses the [liblzma](https://packages.debian.org/source/sid/xz-utils), which must be installed externally, to compress data.
+The preset it set to `COMPRESSION_LEVEL` = 9 and `EXTREME` compression,
+integrity check is set to `LZMA_CHECK_NONE`.
+The level can not be set.
+
+### SNAPPY
+
+Uses [libsnappy](https://packages.debian.org/source/sid/snappy), which must be installed externally, to compress data.
+Snappy has no settings.
+
+### VCBLOCKSORT
+
+Uses a blocksort algorithm which was implemented in [libcomplearn](https://github.com/rudi-cilibrasi/classic-complearn) (classic variant).
+It has no settings.
+
+### SMAZ
+
+Uses the [Short String compression](https://github.com/antirez/smaz) which is basically a codebook compression
+method. SMAZ is not a general compressor but should only be used for strings
+in the english language.
+It has no settings.
+
+### Benchmark
+
 The original publication had a benchmark included, which compression method
 is the best. Usually you will choose the fastest compression method, which gives the best
 results in NCD.
