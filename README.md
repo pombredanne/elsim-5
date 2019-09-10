@@ -83,7 +83,6 @@ Changes to original library
 Broken and not (yet) fixed
 --------------------------
 
-* Elsign
 * unit tests for all the modules
 
 Things that need design re-considerations
@@ -120,6 +119,9 @@ There is an implementation of CMID, where it also questionable for what
 is shall be used and of it produces correct results. CMID seems to be
 a very unfamiliar distance measure which is only used in one thesis
 which is in french unfortunately.
+
+The Signature Format used in Elsim is overcomplicated.
+Too many dicts inside lists inside dicts... Probably should consider using yara instead.
 
 Compression Method
 ------------------
@@ -444,6 +446,72 @@ Simhash based lookups
 with NCD. This is actually similar to the method described by [quarkslab](https://blog.quarkslab.com/android-application-diffing-engine-overview.html).
 
 Androdb might be very slow for large datasets though.
+
+
+The ELSIGN signature format
+---------------------------
+
+Elsign uses a custom format to store signatures. First of all you have to distinguish between the raw signature and the compiled version.
+The raw version does not contain the actual signature information but only how to find it.
+That also means, that depending on the version of elsign you are using, you would have to recompile the signatures.
+This is actually a big advantage in terms of compatability, but a disadvantage in terms of speed.
+This also means, if you ever loose the sample, you are not able to re-create the signature again.
+
+### The raw signature
+
+The format is a list of dictionaries as a JSON String.
+Here is an example of a signature with both METHSIM and CLASSSIM types:
+
+    [
+        {
+            "SAMPLE": "path/to/original/sample"
+        },
+        {
+            "BASE": "AndroidOS (or other Platform Name)",
+            "NAME": "Name of the Signature",
+            "SIGNATURE": [
+                {
+                    "TYPE": "METHSIM",
+                    "CN": "Lcom/class/Name;",
+                    "MN: "methodName",
+                    "D": "()Lthe/Descriptor;"
+                },
+                {
+                    "TYPE": "CLASSSIM",
+                    "CN": "Lcom/class/another/ClassName;"
+                }
+             ],
+             "BF": "a && b"
+        }
+    ]
+
+The format for the field `BF` is a C-Type expression, i.e. boolean operators like `&&` (and), `||` (or) and brackes (`(` and `)`) will work.
+Each item in the `SIGNATURE` list is labeled with lowercase letters starting with `a`. Hence, in the example the `METHSIM` item is `a` while `CLASSSIM` item is `b`.
+
+### The compiled signature
+
+The compiled version of the signature uses base64 to encode some information. It is not printed here in full detail.
+If the above signature is compiled, the result might look like this:
+
+    [
+        {
+            'Name of the Signature': [
+                [
+                    [0, b'QltGMVOtherBase64...', 2.879434986262386, 4.543216940597991, 4.117698018239283, 1.9877090089569163],
+                    [1, b'QltGMVMoreBase64...', 1.0, 4.422101412015318, 3.889157713499765, 0.0]
+                ],
+                'a && b'
+            ]
+        }
+    ]
+
+A quick explaination of the two list items: these are the actual signatures.
+The first integer denotes if it is a method or class signature.
+Then follows in base64 is the actual string of the `L0_4` signature over the Method or class.
+Next up are four entropies, calculated from the string of the `L4` signature with argument `Landroid` (i.e. all API methods),
+the `L4` signature with argument `Ljava`, (i.e. all Java API method calls), the `hex` and `L2` signature.
+
+In the case of a class signature, the entropies are the mean entropies, averaged over all methods in the class.
 
 
 Projects used

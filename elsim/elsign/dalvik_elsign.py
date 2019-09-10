@@ -353,43 +353,44 @@ class SignatureCompiler:
             for j in i["SIGNATURE"]:
                 z = []
                 if j["TYPE"] == "METHSIM":
-                    z.append(SimMethod.METH)
-                    m = vm.get_method_descriptor(j["CN"], j["MN"], j["D"])
+                    m = dx.get_method_by_name(j["CN"], j["MN"], j["D"])
                     if m is None:
                         print("impossible to find", j["CN"], j["MN"], j["D"])
-                        raise("ooo")
+                        continue
 
-                    # print m.get_length()
+                    z.append(SimMethod.METH.value)
                     z_tmp = create_entropies(vmx, m)
-                    print(z_tmp[0])
                     z_tmp[0] = base64.b64encode(z_tmp[0])
                     z.extend(z_tmp)
                 elif j["TYPE"] == "CLASSSIM":
-                    for c in vm.get_classes():
-                        if j["CN"] == c.get_name():
-                            z.append(SimMethod.CLASS)
-                            value = b""
-                            android_entropy = 0.0
-                            java_entropy = 0.0
-                            hex_entropy = 0.0
-                            exception_entropy = 0.0
-                            nb_methods = 0
-                            for m in c.get_methods():
-                                z_tmp = create_entropies(vmx, m)
+                    c = dx.get_class_analysis(j["CN"]).get_vm_class()
+                    if c is None:
+                        print("impossible to find", j["CN"])
+                        continue
 
-                                value += z_tmp[0]
-                                android_entropy += z_tmp[1]
-                                java_entropy += z_tmp[2]
-                                hex_entropy += z_tmp[3]
-                                exception_entropy += z_tmp[4]
+                    z.append(SimMethod.CLASS.value)
+                    value = b""
+                    android_entropy = 0.0
+                    java_entropy = 0.0
+                    hex_entropy = 0.0
+                    exception_entropy = 0.0
+                    nb_methods = 0
+                    for m in c.get_methods():
+                        z_tmp = create_entropies(vmx, m)
 
-                                nb_methods += 1
+                        value += z_tmp[0]
+                        android_entropy += z_tmp[1]
+                        java_entropy += z_tmp[2]
+                        hex_entropy += z_tmp[3]
+                        exception_entropy += z_tmp[4]
 
-                            z.extend([base64.b64encode(value),
-                                      android_entropy/nb_methods,
-                                      java_entropy/nb_methods,
-                                      hex_entropy/nb_methods,
-                                      exception_entropy/nb_methods])
+                        nb_methods += 1
+
+                    z.extend([base64.b64encode(value),
+                              android_entropy/nb_methods,
+                              java_entropy/nb_methods,
+                              hex_entropy/nb_methods,
+                              exception_entropy/nb_methods])
                 else:
                     return None
 
@@ -398,13 +399,16 @@ class SignatureCompiler:
             x[i["NAME"]].append(signature)
             x[i["NAME"]].append(i["BF"])
             l.append(x)
-        print(l)
         return l
 
     @staticmethod
     def get_info(fname):
         """
-        Prints information about the signature.
+        Searches for the specified contents of the signature
+        in the given sample.
+
+        A list is returned containing all EncodedMethods or ClassDefItems
+        which are specified in the signature.
 
         The file must be a JSON file containing the signature.
 
@@ -423,13 +427,11 @@ class SignatureCompiler:
         for i in rules[1:]:
             for j in i["SIGNATURE"]:
                 if j["TYPE"] == "METHSIM":
-                    methods = list(dx.find_methods(j["CN"], j["MN"], j["D"], no_external=True))
-                    if len(methods) > 1:
-                        print("there are several canidates for ", j["CN"], j["MN"], j["D"])
-                    elif methods == []:
+                    m = dx.get_method_by_name(j["CN"], j["MN"], j["D"])
+                    if not m:
                         print("impossible to find", j["CN"], j["MN"], j["D"])
                     else:
-                        res.append(methods[0].get_method())
+                        res.append(m)
 
                 elif j["TYPE"] == "CLASSSIM":
                     for c in dx.find_classes(j["CN"], no_external=True):
