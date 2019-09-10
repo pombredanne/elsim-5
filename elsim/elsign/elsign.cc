@@ -143,7 +143,7 @@ int Elsign::new_id() {
     return this->nb_signatures++;
 }
 
-int Elsign::add_signature(char *name, unsigned int name_size, char *formula, unsigned int formula_size, vector<Signature *> *sub_signatures) {
+int Elsign::add_signature(char *name, size_t name_size, char *formula, size_t formula_size, vector<Signature *> *sub_signatures) {
     MSignature *smain = new MSignature();
 
     /* (formula == 1) -> signature found */
@@ -176,7 +176,7 @@ int Elsign::add_signature(char *name, unsigned int name_size, char *formula, uns
 
 Signature *Elsign::create_sub_signature(const char *input, unsigned int input_size, vector<double> *ets) {
     if (this->db.log) {
-        cout << "CREATE SUB SIGN " << input_size << "\n";
+        cout << "CREATE SUB SIGN " << input_size << "---" << input << "\n";
     }
     
     Signature *s1 = new Signature();
@@ -914,10 +914,10 @@ static PyObject *Elsign_set_weight(sign_ElsignObject *self, PyObject *args)
         return NULL;
     }
 
-    int list_size = PyList_Size( weight_list );
+    Py_ssize_t list_size = PyList_Size( weight_list );
     double *datas = (double *)malloc( list_size * sizeof( double ) );
 
-    for(int i=0; i<list_size; i++) {
+    for(Py_ssize_t i=0; i<list_size; i++) {
         PyObject * pyvalue = 0;
 
         pyvalue = PyList_GetItem(weight_list, i);
@@ -963,15 +963,16 @@ static PyObject *Elsign_set_ncd_compression_algorithm(sign_ElsignObject *self, P
 static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
 {
     // FIXME: Use proper pybuffer here!
-    char *name; unsigned int name_size;
-    char *formula; unsigned int formula_size;
-
+    char *name;
+    Py_ssize_t name_size;
+    char *formula;
+    Py_ssize_t formula_size;
     PyObject *sub_list;
+
     if (self == NULL)
         return NULL;
         
     /* String/String/List */
-
     if (!PyArg_ParseTuple( args, "s#s#O", &name, &name_size, &formula, &formula_size, &sub_list ))
         return NULL;
 
@@ -981,16 +982,16 @@ static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
 
     vector<Signature *> *sub_vector = new vector<Signature *>;
 
-    int list_size = PyList_Size( sub_list );
-    for(int i=0; i < list_size; i++) {
+    Py_ssize_t list_size = PyList_Size( sub_list );
+    for(Py_ssize_t i=0; i < list_size; i++) {
         PyObject *sub_list_item = PyList_GetItem(sub_list, i);
 
         PyObject *ets_list = PyList_GetItem(sub_list_item, 0);
         PyObject *string_sign = PyList_GetItem(sub_list_item, 1);
 
         vector<double> *ets_vector = new vector<double>;
-        int ets_list_size = PyList_Size( ets_list );
-        for(int j=0; j < ets_list_size; j++) {
+        Py_ssize_t ets_list_size = PyList_Size( ets_list );
+        for(Py_ssize_t j=0; j < ets_list_size; j++) {
             PyObject * pyvalue = 0;
 
             pyvalue = PyList_GetItem(ets_list, j);
@@ -1000,9 +1001,13 @@ static PyObject *Elsign_add_signature(sign_ElsignObject *self, PyObject *args)
         }
 
         
-        unsigned int input_size = PyBytes_Size( string_sign );
-        char * input = PyBytes_AsString( string_sign );
-
+        Py_ssize_t input_size;
+        char * input;
+        int ret = PyBytes_AsStringAndSize(string_sign, &input, &input_size);
+        if (ret == -1) {
+            PyErr_SetString(PyExc_ValueError, "No bytes were supplied as forumlar!");
+            return NULL;
+        }
         Signature *value = self->s->create_sub_signature( input, input_size, ets_vector );
 
         sub_vector->push_back( value );
@@ -1030,8 +1035,8 @@ static PyObject *Elsign_add_element(sign_ElsignObject *self, PyObject *args)
 
     vector<double> *ets_vector = new vector<double>;
 
-    int list_size = PyList_Size( ets_list );
-    for(size_t i=0; i<list_size; i++) {
+    Py_ssize_t list_size = PyList_Size( ets_list );
+    for(Py_ssize_t i=0; i<list_size; i++) {
         PyObject * pyvalue = 0;
 
         pyvalue = PyList_GetItem(ets_list, i);

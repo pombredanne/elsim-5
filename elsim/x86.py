@@ -105,7 +105,7 @@ FILTERS_X86 = {
 }
 
 
-class ProxyX86IDA(object):
+class ProxyX86IDA:
     def __init__(self, ipipe):
         # FIXME: Not sure how this was used, but it was probably idapython?!
         self.functions = ipipe.get_quick_functions()

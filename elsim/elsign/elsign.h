@@ -223,7 +223,7 @@ class Elsign {
         void set_ncd_compression_algorithm(int value);
 
         int new_id();
-        int add_signature(char *name, unsigned int name_size, char *formula, unsigned int formula_size, vector<Signature *> *sub_signatures);
+        int add_signature(char *name, size_t name_size, char *formula, size_t formula_size, vector<Signature *> *sub_signatures);
         Signature *create_sub_signature(const char *input, unsigned int input_size, vector<double> *ets);
         void update_sub_signature(Signature *s, unsigned int id, unsigned int id_link, unsigned int value_link);
 
