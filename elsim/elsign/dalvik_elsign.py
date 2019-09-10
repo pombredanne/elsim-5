@@ -33,6 +33,7 @@ from androguard.util import read
 from elsim.elsign.libelsign import Elsign, entropy
 from elsim import similarity
 from elsim import sign
+from elsim import utils
 
 
 class SimMethod(enum.IntEnum):
@@ -339,23 +340,16 @@ class SignatureCompiler:
         with open(fname, "r") as fp:
             rules = json.load(fp)
 
-        ret_type = androconf.is_android(rules[0]["SAMPLE"])
-        if ret_type == "APK":
-            a = apk.APK(rules[0]["SAMPLE"])
-            classes_dex = a.get_dex()
-        elif ret_type == "DEX":
-            classes_dex = read(rules[0]["SAMPLE"])
-        else:
+        dx = utils.load_analysis(rules[0]["SAMPLE"])
+        if dx is None:
             return
 
-        if ret_type == "APK" or ret_type == "DEX":
-            vm = dvm.DalvikVMFormat(classes_dex)
-            vmx = analysis.Analysis(vm)
+        vmx = sign.Signature(dx)
 
         for i in rules[1:]:
             x = {i["NAME"]: []}
 
-            sign = []
+            signature = []
             for j in i["SIGNATURE"]:
                 z = []
                 if j["TYPE"] == "METHSIM":
@@ -366,8 +360,6 @@ class SignatureCompiler:
                         raise("ooo")
 
                     # print m.get_length()
-
-                    # FIXME
                     z_tmp = create_entropies(vmx, m)
                     print(z_tmp[0])
                     z_tmp[0] = base64.b64encode(z_tmp[0])
@@ -383,7 +375,6 @@ class SignatureCompiler:
                             exception_entropy = 0.0
                             nb_methods = 0
                             for m in c.get_methods():
-                                # FIXME
                                 z_tmp = create_entropies(vmx, m)
 
                                 value += z_tmp[0]
@@ -402,47 +393,49 @@ class SignatureCompiler:
                 else:
                     return None
 
-                sign.append(z)
+                signature.append(z)
 
-            x[i["NAME"]].append(sign)
+            x[i["NAME"]].append(signature)
             x[i["NAME"]].append(i["BF"])
             l.append(x)
         print(l)
         return l
 
-    def get_info(self, srules):
-        with open(srules, "r") as fp:
+    @staticmethod
+    def get_info(fname):
+        """
+        Prints information about the signature.
+
+        The file must be a JSON file containing the signature.
+
+        :param str fname: filename to load
+        """
+        with open(fname, "r") as fp:
             rules = json.load(fp)
 
-        ret_type = androconf.is_android(rules[0]["SAMPLE"])
-        if ret_type == "APK":
-            a = apk.APK(rules[0]["SAMPLE"])
-            classes_dex = a.get_dex()
-        elif ret_type == "DEX":
-            classes_dex = read(rules[0]["SAMPLE"])
-        else:
-            return None
-
-        if ret_type == "APK" or ret_type == "DEX":
-            vm = dvm.DalvikVMFormat(classes_dex)
-            vmx = analysis.Analysis(vm)
+        if "SAMPLE" not in rules[0]:
+            raise ValueError("Not a valid Signature, no sample attached!")
+        dx = utils.load_analysis(rules[0]["SAMPLE"])
+        if dx is None:
+            return []
 
         res = []
         for i in rules[1:]:
             for j in i["SIGNATURE"]:
                 if j["TYPE"] == "METHSIM":
-                    m = vm.get_method_descriptor(j["CN"], j["MN"], j["D"])
-                    if m is None:
+                    methods = list(dx.find_methods(j["CN"], j["MN"], j["D"], no_external=True))
+                    if len(methods) > 1:
+                        print("there are several canidates for ", j["CN"], j["MN"], j["D"])
+                    elif methods == []:
                         print("impossible to find", j["CN"], j["MN"], j["D"])
                     else:
-                        res.append(m)
+                        res.append(methods[0].get_method())
 
                 elif j["TYPE"] == "CLASSSIM":
-                    for c in vm.get_classes():
-                        if j["CN"] == c.get_name():
-                            res.append(c)
+                    for c in dx.find_classes(j["CN"], no_external=True):
+                        res.append(c.get_vm_class())
 
-        return vm, vmx, res
+        return res
 
     def list_indb(self, output):
         """
@@ -459,8 +452,8 @@ class SignatureCompiler:
         for i in buff:
             print(i)
             for j in buff[i][0]:
-                sign = base64.b64decode(j[1])
-                print("\t{} ENTROPIES: {} L:{} K:{}".format(j[0], j[2:], len(sign), s.kolmogorov(sign)))
+                signature = base64.b64decode(j[1])
+                print("\t{} ENTROPIES: {} L:{} K:{}".format(j[0], j[2:], len(signature), s.kolmogorov(signature)))
             print("\tFORMULA:", buff[i][-1])
 
     def check_db(self, output):

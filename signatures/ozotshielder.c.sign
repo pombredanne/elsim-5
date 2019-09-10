@@ -1,1 +1,1 @@
-[ { "SAMPLE" : "68e66bb028998c22014f9cc882943bab1497cedc797b638c3f8d479a8eedfd2b" }, { "BASE" : "AndroidOS", "NAME" : "Ozotshielder.C", "SIGNATURE" : [ { "TYPE" : "METHSIM", "CN" : "Lcom/km/MainActivity;", "MN" : "getUrl", "D" : "()Ljava/lang/String;" } ], "BF" : "0" } ]
+[ { "SAMPLE" : "samples/68e66bb028998c22014f9cc882943bab1497cedc797b638c3f8d479a8eedfd2b" }, { "BASE" : "AndroidOS", "NAME" : "Ozotshielder.C", "SIGNATURE" : [ { "TYPE" : "METHSIM", "CN" : "Lcom/km/MainActivity;", "MN" : "getUrl", "D" : "()Ljava/lang/String;" } ], "BF" : "a" } ]

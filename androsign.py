@@ -19,15 +19,12 @@
 # along with Androguard.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import sys
-import traceback
 
 import click
-from androguard.core import androconf
-from androguard.misc import AnalyzeAPK, AnalyzeDex
 
 from elsim import ELSIM_VERSION
 from elsim.elsign import dalvik_elsign
+from elsim.utils import load_analysis
 
 
 @click.command()
@@ -43,27 +40,12 @@ def cli(comp, database, config, verbose):
         click.echo("----> {}".format(ret[0]))
 
     def check_file(filename):
-        ret_type = androconf.is_android(filename)
-
         click.echo("{}:".format(os.path.basename(filename)), nl=False)
-        if ret_type == "APK":
-            try:
-                a, _, dx = AnalyzeAPK(filename)
-                if a.is_valid_APK():
-                    display(s.check(dx))
-                else:
-                    click.echo("INVALID APK", err=True)
-            except Exception as e:
-                click.echo("ERROR: {}".format(e), err=True)
-                print("-"*60)
-                traceback.print_exc(file=sys.stdout)
-                print("-"*60)
-
-        elif ret_type == "DEX":
-            _, _, dx = AnalyzeDex(filename)
-            display(s.check(dx))
-        else:
+        dx = load_analysis(filename)
+        if dx is None:
             click.echo("Unknown filetype!", err=True)
+        else:
+            display(s.check(dx))
 
     if os.path.isfile(comp):
         check_file(comp)

@@ -22,18 +22,7 @@ from androguard.misc import AnalyzeAPK, AnalyzeDex
 
 from elsim import ELSIM_VERSION
 from elsim import db
-
-
-def load_analysis(filename):
-    """Return an AnalysisObject depding on the filetype"""
-    ret_type = androconf.is_android(filename)
-    if ret_type == "APK":
-        _, _, dx = AnalyzeAPK(filename)
-        return dx
-    if ret_type == "DEX":
-        _, _, dx = AnalyzeDex(filename)
-        return dx
-    return None
+from elsim.utils import load_analysis
 
 
 def process_single_file(database, filename):

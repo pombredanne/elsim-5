@@ -18,8 +18,6 @@
 import os
 
 import click
-from androguard.core import androconf
-from androguard.misc import AnalyzeAPK, AnalyzeDex
 
 from elsim import ELSIM_VERSION, Elsim, Eldiff
 from elsim.similarity import Compress
@@ -35,18 +33,7 @@ from elsim.dalvik import (
         DiffDalvikMethod,
         )
 import elsim
-
-
-def load_analysis(filename):
-    """Return an AnalysisObject depding on the filetype"""
-    ret_type = androconf.is_android(filename)
-    if ret_type == "APK":
-        _, _, dx = AnalyzeAPK(filename)
-        return dx
-    if ret_type == "DEX":
-        _, _, dx = AnalyzeDex(filename)
-        return dx
-    return None
+from elsim.utils import load_analysis
 
 
 def check_one_file(dx1, dx2, FS, threshold, compressor, details, view_strings, new, deleted, diff, score):

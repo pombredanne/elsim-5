@@ -1,1 +1,1 @@
-[ { "SAMPLE" : "ee19913af9d8b3051b8f05f1afebecfd79ca25525fc9256bcf7e57269b158b33" }, { "BASE" : "AndroidOS", "NAME" : "YZHCSMS.B", "SIGNATURE" : [ { "TYPE" : "METHSIM", "CN" : "LDaemon/Protocol/RegHttp;", "MN" : "<init>", "D" : "()V" } ], "BF" : "a" } ]
+[ { "SAMPLE" : "samples/ee19913af9d8b3051b8f05f1afebecfd79ca25525fc9256bcf7e57269b158b33" }, { "BASE" : "AndroidOS", "NAME" : "YZHCSMS.B", "SIGNATURE" : [ { "TYPE" : "METHSIM", "CN" : "LDaemon/Protocol/RegHttp;", "MN" : "<init>", "D" : "()V" } ], "BF" : "a" } ]
