@@ -54,20 +54,6 @@ def create_entropies(vmx, m):
             ]
 
 
-def FIX_FORMULA(x, z):
-    # FIXME: remove it and only use new sigs
-    if "0" in x:
-        x = x.replace("and", "&&")
-        x = x.replace("or", "||")
-
-        for i in range(0, z):
-            t = "%c" % (ord('a') + i)
-            x = x.replace("%d" % i, t)
-
-        return x
-    return x
-
-
 class DalvikElsign:
     def __init__(self):
         self.debug = False
@@ -117,9 +103,6 @@ class DalvikElsign:
         for j in z:
             if len(j[0]) == 5:
                 j[0].pop(0)
-
-        # FIXME FORMULA (old version)
-        y = FIX_FORMULA(y, len(z))
 
         if type_signature == SimMethod.METH:
             return self.meth_elsign.add_signature(x, y, z)
@@ -336,10 +319,25 @@ class MSignature:
         return self.p.check(dx, vmx)
 
 
-class PublicCSignature:
-    def add_file(self, srules):
+class SignatureCompiler:
+    """
+    This is an interface to compile signatures into the form which can be used
+    to match samples
+    """
+    def __init__(self):
+        pass
+
+    def add_file(self, fname):
+        """
+        Adds the given file to the database
+
+        The file must be a JSON file containing the signature.
+
+        :param str fname: filename to add
+        """
         l = []
-        rules = json.loads(srules)
+        with open(fname, "r") as fp:
+            rules = json.load(fp)
 
         ret_type = androconf.is_android(rules[0]["SAMPLE"])
         if ret_type == "APK":
@@ -347,10 +345,8 @@ class PublicCSignature:
             classes_dex = a.get_dex()
         elif ret_type == "DEX":
             classes_dex = read(rules[0]["SAMPLE"])
-        elif ret_type == "ELF":
-            elf_file = read(rules[0]["SAMPLE"])
         else:
-            return None
+            return
 
         if ret_type == "APK" or ret_type == "DEX":
             vm = dvm.DalvikVMFormat(classes_dex)
@@ -371,6 +367,7 @@ class PublicCSignature:
 
                     # print m.get_length()
 
+                    # FIXME
                     z_tmp = create_entropies(vmx, m)
                     print(z_tmp[0])
                     z_tmp[0] = base64.b64encode(z_tmp[0])
@@ -379,13 +376,14 @@ class PublicCSignature:
                     for c in vm.get_classes():
                         if j["CN"] == c.get_name():
                             z.append(SimMethod.CLASS)
-                            value = ""
+                            value = b""
                             android_entropy = 0.0
                             java_entropy = 0.0
                             hex_entropy = 0.0
                             exception_entropy = 0.0
                             nb_methods = 0
                             for m in c.get_methods():
+                                # FIXME
                                 z_tmp = create_entropies(vmx, m)
 
                                 value += z_tmp[0]
@@ -407,13 +405,14 @@ class PublicCSignature:
                 sign.append(z)
 
             x[i["NAME"]].append(sign)
-            x[i["NAME"]].append(FIX_FORMULA(i["BF"], len(sign)))
+            x[i["NAME"]].append(i["BF"])
             l.append(x)
         print(l)
         return l
 
     def get_info(self, srules):
-        rules = json.loads(srules)
+        with open(srules, "r") as fp:
+            rules = json.load(fp)
 
         ret_type = androconf.is_android(rules[0]["SAMPLE"])
         if ret_type == "APK":
@@ -421,8 +420,6 @@ class PublicCSignature:
             classes_dex = a.get_dex()
         elif ret_type == "DEX":
             classes_dex = read(rules[0]["SAMPLE"])
-        # elif ret_type == "ELF":
-            #elf_file = read( rules[0]["SAMPLE"])
         else:
             return None
 
@@ -447,28 +444,23 @@ class PublicCSignature:
 
         return vm, vmx, res
 
-
-class CSignature:
-    def __init__(self, pcs=PublicCSignature):
-        self.pcs = pcs()
-
-    def add_file(self, srules):
-        return self.pcs.add_file(srules)
-
-    def get_info(self, srules):
-        return self.pcs.get_info(srules)
-
     def list_indb(self, output):
+        """
+        Lists information about the content of a signature database
+
+        :param str output: the filename to load the database from
+        """
         s = similarity.Similarity()
+        # FIXME: why ZLIB? Any special reason?
         s.set_compress_type(similarity.Compress.ZLIB)
 
-        buff = json.loads(read(output, binary=False))
+        with open(output, "r") as fp:
+            buff = json.load(fp)
         for i in buff:
             print(i)
             for j in buff[i][0]:
                 sign = base64.b64decode(j[1])
-                print("\t", j[0], "ENTROPIES:", j[2:], "L:%d" %
-                      len(sign), "K:%d" % s.kolmogorov(sign)[0])
+                print("\t{} ENTROPIES: {} L:{} K:{}".format(j[0], j[2:], len(sign), s.kolmogorov(sign)))
             print("\tFORMULA:", buff[i][-1])
 
     def check_db(self, output):
@@ -476,7 +468,8 @@ class CSignature:
         meth_sim = []
         class_sim = []
 
-        buff = json.loads(read(output, binary=False))
+        with open(output, "r") as fp:
+            buff = json.load(fp)
         for i in buff:
             nb = 0
             for ssign in buff[i][0]:
@@ -514,7 +507,8 @@ class CSignature:
                             problems[ids[j] + ids[i]] = 0
 
     def remove_indb(self, signature, output):
-        buff = json.loads(read(output, binary=False))
+        with open(output, "r") as fp:
+            buff = json.load(fp)
         del buff[signature]
 
         with open(output, "w") as fd:
@@ -525,14 +519,11 @@ class CSignature:
             return
 
         with open(output, "a+") as fd:
-            buff = fd.read()
-            if buff == "":
-                buff = {}
-            else:
-                buff = json.loads(buff)
+            buff = json.load(fd)
 
         for i in signatures:
             buff.update(i)
 
         with open(output, "w") as fd:
-            fd.write(json.dumps(buff))
+            json.dump(buff, fd)
+

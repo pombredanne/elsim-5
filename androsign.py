@@ -40,7 +40,7 @@ def cli(comp, database, config, verbose):
     s = dalvik_elsign.MSignature(database, config, verbose)
 
     def display(ret):
-        click.echo("---->", ret[0])
+        click.echo("----> {}".format(ret[0]))
 
     def check_file(filename):
         ret_type = androconf.is_android(filename)
