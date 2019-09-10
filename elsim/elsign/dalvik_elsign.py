@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Elsim.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import sys
 import json
 import base64
@@ -320,6 +321,11 @@ class MSignature:
         return self.p.check(dx, vmx)
 
 
+class SigCompileError(Exception):
+    """Base class for compiler errors"""
+    pass
+
+
 class SignatureCompiler:
     """
     This is an interface to compile signatures into the form which can be used
@@ -328,13 +334,16 @@ class SignatureCompiler:
     def __init__(self):
         pass
 
-    def add_file(self, fname):
+    def compile(self, fname):
         """
-        Adds the given file to the database
+        Compile the given file.
+        The resulting signature is not yet added to the database!
+        If must be put into the database manually by using :meth:`add_indb`.
 
         The file must be a JSON file containing the signature.
 
         :param str fname: filename to add
+        :raises SigCompileError: if the signature can not be compiled
         """
         l = []
         with open(fname, "r") as fp:
@@ -342,7 +351,7 @@ class SignatureCompiler:
 
         dx = utils.load_analysis(rules[0]["SAMPLE"])
         if dx is None:
-            return
+            raise SigCompileError("Original File can not be loaded!")
 
         vmx = sign.Signature(dx)
 
@@ -355,18 +364,16 @@ class SignatureCompiler:
                 if j["TYPE"] == "METHSIM":
                     m = dx.get_method_by_name(j["CN"], j["MN"], j["D"])
                     if m is None:
-                        print("impossible to find", j["CN"], j["MN"], j["D"])
-                        continue
+                        raise SigCompileError("impossible to find {}->{} {}".format(j["CN"], j["MN"], j["D"]))
 
                     z.append(SimMethod.METH.value)
                     z_tmp = create_entropies(vmx, m)
-                    z_tmp[0] = base64.b64encode(z_tmp[0])
+                    z_tmp[0] = base64.b64encode(z_tmp[0]).decode('ascii')
                     z.extend(z_tmp)
                 elif j["TYPE"] == "CLASSSIM":
                     c = dx.get_class_analysis(j["CN"]).get_vm_class()
                     if c is None:
-                        print("impossible to find", j["CN"])
-                        continue
+                        raise SigCompileError("impossible to find {}".format(j["CN"]))
 
                     z.append(SimMethod.CLASS.value)
                     value = b""
@@ -386,13 +393,13 @@ class SignatureCompiler:
 
                         nb_methods += 1
 
-                    z.extend([base64.b64encode(value),
+                    z.extend([base64.b64encode(value).decode('ascii'),
                               android_entropy/nb_methods,
                               java_entropy/nb_methods,
                               hex_entropy/nb_methods,
                               exception_entropy/nb_methods])
                 else:
-                    return None
+                    raise SigCompileError("Unknown method {}".format(j["TYPE"]))
 
                 signature.append(z)
 
@@ -509,16 +516,32 @@ class SignatureCompiler:
         with open(output, "w") as fd:
             fd.write(json.dumps(buff))
 
-    def add_indb(self, signatures, output):
-        if signatures is None:
+    def add_indb(self, signatures, output, pretty=False):
+        """
+        Adds the signatures compiled using :meth:`add_file` to a json database
+
+        Existing Signatures with the same name are overwritten without notice!
+
+        :param signature: the signature dict
+        :param str output: the output file
+        :param bool pretty: should the output file be indented
+        """
+        if signatures is None or signatures == []:
             return
 
-        with open(output, "a+") as fd:
-            buff = json.load(fd)
+        if os.path.isfile(output):
+            with open(output, "r") as fd:
+                try:
+                    buff = json.load(fd)
+                except json.decoder.JSONDecodeError:
+                    print("ERROR can not load database, seems corrupted. Deleting database.")
+                    os.unlink(output)
+                    buff = dict()
+        else:
+            buff = dict()
 
         for i in signatures:
             buff.update(i)
 
         with open(output, "w") as fd:
-            json.dump(buff, fd)
-
+            json.dump(buff, fd, indent=2 if pretty else None)

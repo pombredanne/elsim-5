@@ -485,25 +485,28 @@ Here is an example of a signature with both METHSIM and CLASSSIM types:
         }
     ]
 
+The first dictionary containing only the `SAMPLE` key is called Meta-Dict, while all other dictionaries following are called Rules-Dict.
+There might be several Rules-Dicts but only a single Meta-Dict is allowed.
+All Rules will be generated from the same file specified in the Meta-Dict.
+
 The format for the field `BF` is a C-Type expression, i.e. boolean operators like `&&` (and), `||` (or) and brackes (`(` and `)`) will work.
 Each item in the `SIGNATURE` list is labeled with lowercase letters starting with `a`. Hence, in the example the `METHSIM` item is `a` while `CLASSSIM` item is `b`.
+
 
 ### The compiled signature
 
 The compiled version of the signature uses base64 to encode some information. It is not printed here in full detail.
 If the above signature is compiled, the result might look like this:
 
-    [
-        {
-            'Name of the Signature': [
-                [
-                    [0, b'QltGMVOtherBase64...', 2.879434986262386, 4.543216940597991, 4.117698018239283, 1.9877090089569163],
-                    [1, b'QltGMVMoreBase64...', 1.0, 4.422101412015318, 3.889157713499765, 0.0]
-                ],
-                'a && b'
-            ]
-        }
-    ]
+    {
+        'Name of the Signature': [
+            [
+                [0, b'QltGMVOtherBase64...', 2.879434986262386, 4.543216940597991, 4.117698018239283, 1.9877090089569163],
+                [1, b'QltGMVMoreBase64...', 1.0, 4.422101412015318, 3.889157713499765, 0.0]
+            ],
+            'a && b'
+        ]
+    }
 
 A quick explaination of the two list items: these are the actual signatures.
 The first integer denotes if it is a method or class signature.
@@ -512,6 +515,8 @@ Next up are four entropies, calculated from the string of the `L4` signature wit
 the `L4` signature with argument `Ljava`, (i.e. all Java API method calls), the `hex` and `L2` signature.
 
 In the case of a class signature, the entropies are the mean entropies, averaged over all methods in the class.
+
+A signature database contains a dictionary with more than one key.
 
 
 Projects used
