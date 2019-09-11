@@ -492,6 +492,9 @@ All Rules will be generated from the same file specified in the Meta-Dict.
 The format for the field `BF` is a C-Type expression, i.e. boolean operators like `&&` (and), `||` (or) and brackes (`(` and `)`) will work.
 Each item in the `SIGNATURE` list is labeled with lowercase letters starting with `a`. Hence, in the example the `METHSIM` item is `a` while `CLASSSIM` item is `b`.
 
+**WARNING**: The Example above is actually wrong, as it mixes CLASSSIM and METHSIM! **Right now, this is not possible!**
+You can only use METHSIM **OR** CLASSSIM, but never both at the same time.
+
 
 ### The compiled signature
 

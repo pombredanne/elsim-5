@@ -23,7 +23,7 @@ import os
 import click
 
 from elsim import ELSIM_VERSION
-from elsim.elsign import dalvik_elsign
+from elsim import elsign
 from elsim.utils import load_analysis
 
 
@@ -34,7 +34,7 @@ from elsim.utils import load_analysis
 @click.option('-v', '--verbose', is_flag=True, help='display debug information')
 @click.argument('comp')
 def cli(comp, database, config, verbose):
-    s = dalvik_elsign.MSignature(database, config, verbose)
+    s = elsign.SignatureMatcher(database, config, verbose)
 
     def display(ret):
         click.echo("----> {}".format(ret[0]))
@@ -45,7 +45,7 @@ def cli(comp, database, config, verbose):
         if dx is None:
             click.echo("Unknown filetype!", err=True)
         else:
-            display(s.check(dx))
+            display(s.match(dx))
 
     if os.path.isfile(comp):
         check_file(comp)
