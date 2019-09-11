@@ -122,6 +122,10 @@ which is in french unfortunately.
 
 The Signature Format used in Elsim is overcomplicated.
 Too many dicts inside lists inside dicts... Probably should consider using yara instead.
+There is also a lot of interest in strings usually, hence such a method should be implemented as well.
+If going for a full blown APK detection, the methods used in yara-androguard developed by Koodous should be incorporated too.
+The format also has the flaw, that it only support either class signatures or method signatures but not both.
+This is a flaw in the whole system right now.
 
 Compression Method
 ------------------
@@ -492,8 +496,9 @@ All Rules will be generated from the same file specified in the Meta-Dict.
 The format for the field `BF` is a C-Type expression, i.e. boolean operators like `&&` (and), `||` (or) and brackes (`(` and `)`) will work.
 Each item in the `SIGNATURE` list is labeled with lowercase letters starting with `a`. Hence, in the example the `METHSIM` item is `a` while `CLASSSIM` item is `b`.
 
-**WARNING**: The Example above is actually wrong, as it mixes CLASSSIM and METHSIM! **Right now, this is not possible!**
+**WARNING**: The example above is actually wrong, as it mixes CLASSSIM and METHSIM! **Right now, this is not possible!**
 You can only use METHSIM **OR** CLASSSIM, but never both at the same time.
+The example just shows the two types!
 
 
 ### The compiled signature

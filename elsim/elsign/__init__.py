@@ -86,9 +86,26 @@ class DalvikElsign:
         self.class_elsign.raz()
 
     def load_config(self, buff):
+        """
+        Load a given config dictionary
+
+        Must containt the following structure:
+        Two keys :code:`"METHSIM"` and :code:`"CLASSSIM"`.
+        Each hold a dict as value with the following structure:
+
+        * :code:`"DISTANCE"` a single character
+        * :code:`"METHOD"` a single character
+        * :code:`"WEIGHTS"` a list of five floats
+        * :code:`"THRESHOLD_LOW"` a single float
+        * :code:`"THRESHOLD_HIGH"` a single float
+
+        :param dict buff: the configuration
+        """
+
         if self.debug:
             pprint(buff)
 
+        # FIXME: add defaults for the config as well as a better method of parsing the config
         methsim = buff["METHSIM"]
         self.meth_elsign.set_distance(methsim["DISTANCE"].encode('ascii'))
         self.meth_elsign.set_method(methsim["METHOD"].encode('ascii'))
@@ -183,11 +200,14 @@ class DalvikElsign:
                                                       java_entropy/nb_methods,
                                                       hex_entropy/nb_methods,
                                                       exception_entropy/nb_methods])
-                del value, z_tmp
 
     def check(self, vm, vmx):
         """
-        Check if a signature matches in the given Analysis
+        Check if a signature matches in the given Analysis.
+
+        First, the method check is performed.
+        If there is no match using the methods, the classes are
+        checked too.
 
         :param androguard.core.analysis.analysis.Analysis dx:
         :param elsim.sign.Signature vmx:
@@ -243,8 +263,7 @@ class DalvikElsign:
                 except ZeroDivisionError:
                     percentage = 0
                 finally:
-                    print("-> %d %f%%]" %
-                          (debug_nb_cmp_max, percentage * 100), end=' ')
+                    print("-> %d %f%%]" % (debug_nb_cmp_max, percentage * 100), end=' ')
 
                 print(ret[1:], end=' ')
 
