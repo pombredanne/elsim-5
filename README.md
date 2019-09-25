@@ -84,6 +84,8 @@ Broken and not (yet) fixed
 --------------------------
 
 * unit tests for all the modules
+* Native code should be looked at. There are possibily many mem-leaks and other weird stuff.
+  For example there are some buffer overflows in the compression code.
 
 Things that need design re-considerations
 -----------------------------------------
