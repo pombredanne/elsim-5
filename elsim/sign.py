@@ -343,12 +343,6 @@ class Signature:
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         """
-        if analysis_method is None:
-            # It looks like this can happen if the method is never used by anything else, hence it has no XREFs!
-            # Just ignore that for now...
-            # print("Found a method which can not be found!!! -> {}".format(analysis_method.get_method().full_name))
-            return
-
         # If something is here, this is clearly a PACKAGE_CALL.
         for _, meth, off in analysis_method.get_xref_to():
             yield off, meth, TAINTED_PACKAGE_CALL
