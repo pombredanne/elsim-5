@@ -33,6 +33,15 @@ setup(
         "numpy",  # only used once, not sure if actual dependency or just some optional stuff
         "sklearn",  # only used once, not sure if actual dependency or just some optional stuff
     ],
+    entry_points={
+        "console_scripts": [
+            "dalviksim = elsim.cli.dalviksim:cli",
+            "textsim = elsim.cli.textsim:cli",
+            "elsimbenchmark = elsim.cli.benchmark:cli",
+            "androdb = elsim.cli.androdb:cli",
+            "androsign = elsim.cli.androsign:cli",
+            ],
+        },
     ext_modules=[
         Extension(
             'elsim.similarity.libsimilarity',
