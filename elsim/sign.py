@@ -316,11 +316,10 @@ class Signature:
 
         :rtype: Generator[(int, str), None, None]
         """
-        meth = analysis_method.get_method()
         # FIXME: this is super slow, as we always check all strings...
         for real_string, string_analysis in self.dx.get_strings_analysis().items():
             for _, src_meth, off in string_analysis.get_xref_from(withoffset=True):
-                if meth == src_meth:
+                if analysis_method == src_meth:
                     yield off, real_string
 
     def _get_all_fields_by_method(self, analysis_method):
@@ -329,14 +328,13 @@ class Signature:
 
         :rtype: Generator[(int, int), None, None]
         """
-        meth = analysis_method.get_method()
         for field_analysis in self.dx.get_fields():
             # FIXME the return type is crap... should use an enum
             for _, src_meth, off in field_analysis.get_xref_read(withoffset=True):
-                if meth == src_meth:
+                if analysis_method == src_meth:
                     yield off, 0
             for _, src_meth, off in field_analysis.get_xref_write(withoffset=True):
-                if meth == src_meth:
+                if analysis_method == src_meth:
                     yield off, 1
 
     def _get_packages_by_method(self, analysis_method):
@@ -345,16 +343,14 @@ class Signature:
 
         :param androguard.core.analysis.analysis.MethodAnalysis analysis_method:
         """
-        # FIXME: this should be fixed in androguard, so that we combine MethodAnalysis and MethodClassAnalysis
-        mca = self.dx.get_method_analysis(analysis_method.get_method())
-        if mca is None:
+        if analysis_method is None:
             # It looks like this can happen if the method is never used by anything else, hence it has no XREFs!
             # Just ignore that for now...
             # print("Found a method which can not be found!!! -> {}".format(analysis_method.get_method().full_name))
             return
 
         # If something is here, this is clearly a PACKAGE_CALL.
-        for _, meth, off in mca.get_xref_to():
+        for _, meth, off in analysis_method.get_xref_to():
             yield off, meth, TAINTED_PACKAGE_CALL
 
         # In order to get the PACKAGE_CREATE, we need to check the ClassAnalysis objects...
@@ -363,7 +359,7 @@ class Signature:
             for called_class, values in ca.get_xref_to().items():
                 for ref, meth, off in values:
                     if ref == 0x22:  # FIXME: Use the same as TAINTED did for now, might add 0x1c later
-                        if meth == analysis_method.get_method():
+                        if meth == analysis_method:
                             yield off, meth, TAINTED_PACKAGE_CREATE
 
     def _get_strings_a1(self, analysis_method, *args):
@@ -458,14 +454,14 @@ class Signature:
                 # but the access flag itself is always 0 or 1
                 if access == TAINTED_PACKAGE_CALL:
                     # This is used of the package is called
-                    if isinstance(meth, dvm.EncodedMethod):
+                    if not meth.is_external():
                         # If not external, then the call is 2.
                         # In that sense, we are only monitoring calls to APIs here!
                         # If the call is internal, we never print the name.
                         l.append((offset, "P{}".format(TAINTED_PACKAGE_INTERNAL_CALL)))
                     else:
                         if present:
-                            l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.get_descriptor())))
+                            l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.descriptor)))
                         else:
                             l.append((offset, "P{}".format(access)))
                 else:
@@ -500,7 +496,7 @@ class Signature:
                 continue
 
             if access == 1:
-                l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.get_descriptor())))
+                l.append((offset, "P{}{{{}{}{}}}".format(access, cls_name, meth.name, meth.descriptor)))
             else:
                 l.append((offset, "P{}{{{}}}".format(access, cls_name)))
 
